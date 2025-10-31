@@ -1,0 +1,71 @@
+:root {
+  --page-bg: #f4ece9;
+  --spinner-track: rgba(15, 95, 151, 0.12);
+  --spinner-head: #2f8cda;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--page-bg);
+  font-family: "Segoe UI", sans-serif;
+}
+
+.loading-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 48px;
+}
+
+.loading-logo {
+  width: 156px;
+  height: 156px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 24px 48px rgba(12, 40, 84, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-logo img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.spinner {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  border: 6px solid var(--spinner-track);
+  border-top-color: var(--spinner-head);
+  animation: spin 1s linear infinite;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

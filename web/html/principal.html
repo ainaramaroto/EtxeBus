@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EtxeBus - Panel principal</title>
+  <link rel="stylesheet" href="../css/principal.css">
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
+</head>
+<body>
+  <header class="main-header">
+    <div class="brand">
+      <img src="../image/logo.png" alt="EtxeBus logo" class="logo">
+      <h1>EtxeBus</h1>
+    </div>
+    <div class="header-actions">
+      <button class="header-icon" type="button" aria-label="Favoritos">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 2.5l2.7 5.4 6 .9-4.4 4.2 1 6-5.3-2.8-5.3 2.8 1-6-4.4-4.2 6-.9z" fill="currentColor"/>
+        </svg>
+      </button>
+      <button class="header-icon" type="button" aria-label="Perfil">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 12a4 4 0 100-8 4 4 0 000 8z" fill="currentColor"/>
+          <path d="M5 19.5c0-3.2 3.3-5.8 7-5.8s7 2.6 7 5.8V21H5z" fill="currentColor"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="dashboard">
+    <section class="map-wrapper">
+      <div id="map" role="region" aria-label="Mapa de paradas de autob&uacute;s"></div>
+    </section>
+    <aside class="actions-panel">
+      <button type="button" class="action">
+        <span class="action-icon" aria-hidden="true">
+          <svg viewBox="0 0 32 32">
+            <path d="M8 7l8-3 8 3 0 0 0 0v18l-8 3-8-3-4 1.5V8.5z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="2"/>
+            <path d="M12 11l6 3-5 4 6 3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"/>
+          </svg>
+        </span>
+        <span class="action-label">L&iacute;neas</span>
+      </button>
+      <button type="button" class="action">
+        <span class="action-icon" aria-hidden="true">
+          <svg viewBox="0 0 32 32">
+            <circle cx="16" cy="16" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
+            <path d="M16 10v6l4 3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"/>
+          </svg>
+        </span>
+        <span class="action-label">Horarios</span>
+      </button>
+      <button type="button" class="action">
+        <span class="action-icon" aria-hidden="true">
+          <svg viewBox="0 0 32 32">
+            <path d="M11 10a4 4 0 118 0c0 3.8-4 8.5-4 8.5S11 13.8 11 10z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="2"/>
+            <circle cx="22" cy="22" r="3" fill="currentColor"/>
+            <path d="M16 18c2.5 1.5 4.5 3.5 6 5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"/>
+          </svg>
+        </span>
+        <span class="action-label">Trayecto</span>
+      </button>
+    </aside>
+  </main>
+
+  <script src="../js/mapa.js"></script>
+  <script src="../js/principal.js"></script>
+</body>
+</html>
