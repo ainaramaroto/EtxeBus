@@ -2,29 +2,22 @@ const crypto = require('crypto');
 
 class Usuario {
     /**
-     * Campos según el modelo:
-     * - idUsuario    integer(10) PK (se genera si no se pasa)
-     * - nomUsuario   varchar(25) NOT NULL
-     * - email        varchar(40) NOT NULL
-     * - contrasenia  varchar(15) NOT NULL (en esta implementación se guarda hasheada => se recomienda ampliar campo en BD)
-     * - telf         varchar(15) NULL
-     *
      * @param {Object} opts
      * @param {number|string} [opts.idUsuario]
      * @param {string} opts.nomUsuario
-     * @param {string} opts.contrasenia - texto plano (se guardará hasheada)
+     * @param {string} opts.contrasenia
      * @param {string} opts.email
-     * @param {string} [opts.telf]
+     * @param {string|null} [opts.telf]
      */
     constructor({ idUsuario = null, nomUsuario, contrasenia, email, telf = null } = {}) {
         if (!nomUsuario) throw new Error('nomUsuario requerido');
         if (!contrasenia) throw new Error('contrasenia requerida');
         if (!email) throw new Error('email requerido');
 
-        if (!Usuario.validarNomUsuario(nomUsuario)) throw new Error('nomUsuario inválido (max 25 caracteres)');
-        if (!Usuario.validarContrasenia(contrasenia)) throw new Error('contrasenia inválida (6-15 caracteres)');
-        if (!Usuario.validarEmail(email)) throw new Error('email inválido');
-        if (telf !== null && !Usuario.validarTelf(telf)) throw new Error('telf inválido (max 15 caracteres)');
+        if (!Usuario.validarNomUsuario(nomUsuario)) throw new Error('nomUsuario invalido (max 25 caracteres)');
+        if (!Usuario.validarContrasenia(contrasenia)) throw new Error('contrasenia invalida (6-15 caracteres)');
+        if (!Usuario.validarEmail(email)) throw new Error('email invalido');
+        if (telf !== null && !Usuario.validarTelf(telf)) throw new Error('telf invalido (max 15 caracteres)');
 
         this.idUsuario = idUsuario != null ? Number(idUsuario) : Usuario.generarIdNumerico();
         this.nomUsuario = String(nomUsuario).trim();
@@ -34,13 +27,10 @@ class Usuario {
         this.createdAt = new Date().toISOString();
     }
 
-    // Genera un id numérico compatible con integer(10). No garantizo unicidad absoluta en cluster; ajustar según BD.
     static generarIdNumerico() {
-        // toma los últimos 10 dígitos del timestamp y añade un componente aleatorio pequeño
         const base = Number(String(Date.now()).slice(-10));
-        const rand = Math.floor(Math.random() * 90) + 10; // 10..99
-        // asegurar que siga siendo <= 10 dígitos
-        const id = (base % 1e8) * 100 + rand; // valor en rango < 1e10
+        const rand = Math.floor(Math.random() * 90) + 10;
+        const id = (base % 1e8) * 100 + rand;
         return id;
     }
 
@@ -49,7 +39,7 @@ class Usuario {
     }
 
     setContrasenia(plain) {
-        if (!Usuario.validarContrasenia(plain)) throw new Error('contrasenia inválida (6-15 caracteres)');
+        if (!Usuario.validarContrasenia(plain)) throw new Error('contrasenia invalida (6-15 caracteres)');
         this.contrasenia = Usuario.hashContrasenia(plain);
     }
 
@@ -59,7 +49,7 @@ class Usuario {
 
     static validarEmail(email) {
         if (typeof email !== 'string') return false;
-        const s = String(email).trim();
+        const s = email.trim();
         if (s.length === 0 || s.length > 40) return false;
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.toLowerCase());
     }
@@ -72,14 +62,15 @@ class Usuario {
 
     static validarContrasenia(c) {
         if (typeof c !== 'string') return false;
-        const s = c;
+        const s = c.trim();
         return s.length >= 6 && s.length <= 15;
     }
 
     static validarTelf(t) {
         if (t === null || t === undefined) return true;
         if (typeof t !== 'string') return false;
-        return t.trim().length > 0 && t.trim().length <= 15;
+        const s = t.trim();
+        return s.length > 0 && s.length <= 15;
     }
 
     toObject(includeContrasenia = false) {
@@ -88,21 +79,16 @@ class Usuario {
             nomUsuario: this.nomUsuario,
             email: this.email,
             telf: this.telf,
-            createdAt: this.createdAt
+            createdAt: this.createdAt,
         };
         if (includeContrasenia) base.contrasenia = this.contrasenia;
         return base;
     }
 
     toJSON() {
-        // por defecto no incluimos la contrasenia
         return this.toObject(false);
     }
 
-    /**
-     * Construye un Usuario a partir de un objeto (por ejemplo registro BD).
-     * Si el campo contrasenia parece ser un hash (hex 64 chars), se conserva tal cual.
-     */
     static fromObject(obj = {}) {
         if (!obj) throw new Error('obj requerido');
 
@@ -111,26 +97,25 @@ class Usuario {
         const email = obj.email;
         const telf = obj.telf !== undefined ? obj.telf : (obj.telefono || null);
 
-        // si contrasenia es hash de 64 hex chars, lo usamos como "contrasenia" al construir y evitamos doble-hash
-        const contr = obj.contrasenia || obj.password || '';
-        const u = new Usuario({
+        const rawPassword = obj.contrasenia || obj.password || '';
+        const isHash = /^[a-f0-9]{64}$/i.test(String(rawPassword));
+        const contraseniaBase = isHash ? 'temporal123' : rawPassword || 'temporal123';
+
+        const usuario = new Usuario({
             idUsuario: id,
             nomUsuario: nom,
-            contrasenia: contr || 'temporal123', // si viene vacío, forzamos valor para constructor; se reemplazará abajo si procede
+            contrasenia: contraseniaBase,
             email,
-            telf
+            telf,
         });
 
-        if (obj.contrasenia && /^[a-f0-9]{64}$/i.test(String(obj.contrasenia))) {
-            u.contrasenia = String(obj.contrasenia);
-        } else if (obj.password && /^[a-f0-9]{64}$/i.test(String(obj.password))) {
-            u.contrasenia = String(obj.password);
-        } else if (obj.contrasenia && !/^[a-f0-9]{64}$/i.test(String(obj.contrasenia))) {
-            // si se pasó la contraseña en texto plano, re-hashearla correctamente
-            u.contrasenia = Usuario.hashContrasenia(String(obj.contrasenia));
+        if (isHash) {
+            usuario.contrasenia = String(rawPassword);
+        } else if (!rawPassword) {
+            usuario.contrasenia = Usuario.hashContrasenia('temporal123');
         }
 
-        return u;
+        return usuario;
     }
 }
 

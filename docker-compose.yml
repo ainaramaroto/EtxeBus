@@ -16,14 +16,59 @@ services:
       - mongo
     restart: unless-stopped
 
+  api_gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      ALLOWED_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+      USERS_SERVICE_URL: http://microservicio_usuarios:3000
+      REQUEST_TIMEOUT_MS: 8000
+    ports:
+      - "4000:4000"
+    depends_on:
+      - microservicio_usuarios
+    restart: unless-stopped
+
+  microservicio_transporte:
+    build:
+      context: ./microservicioTransporte
+      dockerfile: Dockerfile
+    container_name: microservicio-transporte
+    environment:
+      TRANSPORTE_DATABASE_URL: postgresql+psycopg2://etxebus:etxebus@transporte-db:5432/etxebus_transporte
+      TRANSPORTE_TIMEZONE: Europe/Madrid
+    depends_on:
+      - transporte_db
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
+
+  transporte_db:
+    image: postgres:15
+    container_name: transporte-db
+    environment:
+      POSTGRES_USER: etxebus
+      POSTGRES_PASSWORD: etxebus
+      POSTGRES_DB: etxebus_transporte
+    ports:
+      - "5434:5432"
+    volumes:
+      - transporte-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
   mongo:
     image: mongo:7
     container_name: etxebus-mongo
     restart: unless-stopped
     ports:
-      - "27017:27017"
+      - "27018:27017"
     volumes:
       - mongo-data:/data/db
 
 volumes:
   mongo-data:
+  transporte-data:

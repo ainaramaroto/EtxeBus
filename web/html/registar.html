@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crear cuenta - EtxeBus</title>
+  <link rel="stylesheet" href="../css/login.css">
+</head>
+<body>
+  <div class="login-wrapper">
+    <div class="login-card">
+      <div class="avatar">
+        <img src="../image/logo.png" alt="EtxeBus logo">
+      </div>
+      <div class="form-box">
+        <form id="register-form" novalidate>
+          <div class="input-field">
+            <span class="input-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <circle cx="12" cy="8" r="4"></circle>
+                <path d="M4 20c0-3.8 3.4-6 8-6s8 2.2 8 6"></path>
+              </svg>
+            </span>
+            <input id="register-name" name="name" type="text" placeholder="Nombre completo" autocomplete="name" required>
+          </div>
+          <div class="input-field">
+            <span class="input-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="M4 4h16v16H4z" fill="none"></path>
+                <path d="M4 6l8 6 8-6" fill="none"></path>
+                <path d="M4 18V6" fill="none"></path>
+                <path d="M20 18V6" fill="none"></path>
+              </svg>
+            </span>
+            <input id="register-email" name="email" type="email" placeholder="Correo electr&oacute;nico" autocomplete="email" required>
+          </div>
+          <div class="input-field password-field">
+            <span class="input-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <rect x="6.5" y="11" width="11" height="9" rx="2"></rect>
+                <path d="M8 11V8a4 4 0 0 1 8 0v3"></path>
+                <path d="M12 14v3"></path>
+              </svg>
+            </span>
+            <input id="register-password" name="password" type="password" placeholder="Contrase&ntilde;a" autocomplete="new-password" required>
+          </div>
+          <div class="input-field password-field">
+            <span class="input-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <rect x="6.5" y="11" width="11" height="9" rx="2"></rect>
+                <path d="M8 11V8a4 4 0 0 1 8 0v3"></path>
+                <path d="M12 14v3"></path>
+              </svg>
+            </span>
+            <input id="register-password-confirm" name="password_confirm" type="password" placeholder="Confirmar contrase&ntilde;a" autocomplete="new-password" required>
+          </div>
+          <button type="submit" class="primary">Crear cuenta</button>
+          <p id="register-message" class="login-error" role="alert" aria-live="polite"></p>
+        </form>
+        <p class="signup-hint">¿Ya tienes cuenta? <a href="login.html">Inicia sesi&oacute;n</a></p>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/registar.js"></script>
+</body>
+</html>
