@@ -1,6 +1,15 @@
 version: "3.9"
 
 services:
+  web_frontend:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: etxebus-web
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+
   microservicio_usuarios:
     build:
       context: ./microservicioUsuarios
@@ -24,8 +33,9 @@ services:
     environment:
       NODE_ENV: production
       PORT: 4000
-      ALLOWED_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+      ALLOWED_ORIGINS: http://localhost:5173,http://127.0.0.1:5173,http://localhost:8080,http://127.0.0.1:8080
       USERS_SERVICE_URL: http://microservicio_usuarios:3000
+      TRANSPORTE_SERVICE_URL: http://microservicio_transporte:5000
       REQUEST_TIMEOUT_MS: 8000
     ports:
       - "4000:4000"
@@ -59,6 +69,25 @@ services:
     volumes:
       - transporte-data:/var/lib/postgresql/data
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U etxebus"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pgadmin:
+    image: dpage/pgadmin4:8
+    container_name: pgadmin-transporte
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@etxebus.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - transporte_db
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    restart: unless-stopped
 
   mongo:
     image: mongo:7
@@ -72,3 +101,4 @@ services:
 volumes:
   mongo-data:
   transporte-data:
+  pgadmin-data:

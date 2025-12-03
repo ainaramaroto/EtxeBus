@@ -1,19 +1,31 @@
-from contextlib import contextmanager
+from __future__ import annotations
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 from .config import get_settings
 
+
+class Base(DeclarativeBase):
+    pass
+
+
 settings = get_settings()
 engine = create_engine(settings.database_url, pool_pre_ping=True)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 
 
-@contextmanager
-def get_session():
-    session = SessionLocal()
+def get_db():
+    db = SessionLocal()
     try:
-        yield session
+        yield db
     finally:
-        session.close()
+        db.close()
+
+
+def init_db() -> None:
+    from . import models  # noqa: F401  # ensures models register with metadata
+    from .seed_data import seed_initial_data
+
+    Base.metadata.create_all(bind=engine)
+    seed_initial_data(SessionLocal)

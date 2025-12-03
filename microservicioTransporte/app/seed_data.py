@@ -1,79 +1,164 @@
-"""Carga de datos iniciales para el microservicio de transporte."""
+from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
 from . import models
 
-STOPS = [
-    {"id": 101, "code": "ST01", "name": "Metro Etxebarri", "latitude": 43.24397, "longitude": -2.89677},
-    {"id": 102, "code": "ST02", "name": "Metacal Kalea", "latitude": 43.24493, "longitude": -2.89371},
-    {"id": 103, "code": "ST03", "name": "Doneztebe Eliza", "latitude": 43.24599, "longitude": -2.89112},
-    {"id": 104, "code": "ST04", "name": "San Antonio Hiribidea", "latitude": 43.24703, "longitude": -2.88729},
-    {"id": 105, "code": "ST05", "name": "Kukullaga Ikastetxea", "latitude": 43.24902, "longitude": -2.88615},
-    {"id": 106, "code": "ST06", "name": "Kiroldegia", "latitude": 43.25067, "longitude": -2.88411},
-    {"id": 107, "code": "ST07", "name": "Galicia Kalea", "latitude": 43.25266, "longitude": -2.88333},
-    {"id": 108, "code": "ST08", "name": "Santa Marina", "latitude": 43.25589, "longitude": -2.88302},
-    {"id": 109, "code": "ST09", "name": "IES Etxebarri BHI", "latitude": 43.25343, "longitude": -2.88489},
-    {"id": 110, "code": "ST10", "name": "Goiko San Antonio", "latitude": 43.25103, "longitude": -2.88396},
-    {"id": 111, "code": "ST11", "name": "Marivi Iturbe", "latitude": 43.24899, "longitude": -2.88603},
-    {"id": 112, "code": "ST12", "name": "Beheko San Antonio", "latitude": 43.24718, "longitude": -2.88748},
-]
-
-LINES = [
+DEFAULT_SCHEDULE_CARDS = [
     {
-        "id": 1,
-        "code": "L1",
-        "name": "Circular Etxebarri",
-        "description": "Recorrido completo por los barrios principales",
-        "color": "#0055A4",
-        "headway_minutes": 10,
+        "slug": "l1-santa-marina",
+        "line_code": "L1",
+        "line_name": "Linea 1",
+        "line_badge": "Linea 1",
+        "line_color": "#0074D9",
+        "service_name": "Santa Marina y Metro",
+        "description": "Frecuencias oficiales entre Metro Etxebarri y Santa Marina.",
+        "blocks": [
+            {
+                "title": "Laborables",
+                "note": "Tiempos en negrita indican servicio adaptado a dias no lectivos.",
+                "columns": [
+                    {
+                        "label": "Lectivos",
+                        "items": [
+                            {"start": "06:00", "end": "06:10"},
+                            {"start": "07:00", "end": "07:10"},
+                            {"start": "08:30", "end": "08:40"},
+                            {"start": "13:00", "end": "13:10"},
+                            {"start": "18:30", "end": "18:40"},
+                        ],
+                    },
+                    {
+                        "label": "No lectivos",
+                        "items": [
+                            {"start": "06:30", "end": "06:40", "highlight": True},
+                            {"start": "07:30", "end": "07:40", "highlight": True},
+                            {"start": "09:00", "end": "09:10"},
+                            {"start": "13:30", "end": "13:40"},
+                            {"start": "19:00", "end": "19:10"},
+                        ],
+                    },
+                ],
+            },
+            {
+                "title": "Fines de semana",
+                "columns": [
+                    {
+                        "label": "Santa Marina",
+                        "items": [
+                            {"start": "07:00"},
+                            {"start": "10:20"},
+                            {"start": "13:40"},
+                            {"start": "17:10"},
+                            {"start": "20:30"},
+                        ],
+                    },
+                    {
+                        "label": "Metro",
+                        "items": [
+                            {"start": "07:10"},
+                            {"start": "10:30"},
+                            {"start": "13:50"},
+                            {"start": "17:20"},
+                            {"start": "20:40"},
+                        ],
+                    },
+                ],
+                "note": "Entre salidas se mantiene la frecuencia municipal.",
+            },
+        ],
     },
     {
-        "id": 2,
-        "code": "L2",
-        "name": "Expreso Kukullaga",
-        "description": "Servicio directo entre Metro y Kukullaga",
-        "color": "#F4A300",
-        "headway_minutes": 15,
+        "slug": "l2-poligono-boquete",
+        "line_code": "L2",
+        "line_name": "Linea 2",
+        "line_badge": "Linea 2",
+        "line_color": "#1B8F3A",
+        "service_name": "Servicio Luze y Labur",
+        "description": "Recorridos hacia poligono industrial y barrio del Boquete.",
+        "blocks": [
+            {
+                "title": "Laborables",
+                "subtitle": "Servicio Luze (Poligono + Boquete)",
+                "columns": [
+                    {
+                        "label": "Lectivos (Metro → Boquete)",
+                        "items": [
+                            {"start": "06:30", "end": "06:55"},
+                            {"start": "07:30", "end": "07:55"},
+                            {"start": "10:25", "end": "10:55"},
+                            {"start": "12:40", "end": "13:10"},
+                            {"start": "16:40", "end": "17:10"},
+                            {"start": "19:40", "end": "20:10"},
+                        ],
+                    },
+                    {
+                        "label": "No lectivos",
+                        "items": [
+                            {"start": "07:00", "end": "07:25"},
+                            {"start": "09:30", "end": "09:55"},
+                            {"start": "12:00", "end": "12:30"},
+                            {"start": "15:10", "end": "15:40"},
+                            {"start": "18:20", "end": "18:50"},
+                            {"start": "21:00", "end": "21:30"},
+                        ],
+                    },
+                ],
+                "note": "Recorrido Luze: Metro → Fuenlabrada → Poligono → Boquete → Metro.",
+            },
+            {
+                "title": "Servicio Labur",
+                "subtitle": "Solo laborables",
+                "columns": [
+                    {
+                        "label": "Lectivos",
+                        "items": [
+                            {"start": "06:55", "end": "07:05", "highlight": True},
+                            {"start": "08:05", "end": "08:15"},
+                            {"start": "11:55", "end": "12:05", "highlight": True},
+                            {"start": "14:10", "end": "14:20", "highlight": True},
+                            {"start": "17:40", "end": "17:50"},
+                            {"start": "19:20", "end": "19:30", "highlight": True},
+                        ],
+                    },
+                    {
+                        "label": "No lectivos",
+                        "items": [
+                            {"start": "07:25", "end": "07:35", "highlight": True},
+                            {"start": "08:35", "end": "08:45", "highlight": True},
+                            {"start": "12:25", "end": "12:35"},
+                            {"start": "14:40", "end": "14:50"},
+                            {"start": "18:10", "end": "18:20", "highlight": True},
+                            {"start": "—"},
+                        ],
+                    },
+                ],
+                "note": "En negrita se destacan las expediciones de recorrido corto (Labur).",
+            },
+        ],
     },
 ]
 
-LINE_STOPS = [
-    # L�nea 1 circular
-    (1, 101, 1, 0),
-    (1, 102, 2, 3),
-    (1, 103, 3, 5),
-    (1, 104, 4, 7),
-    (1, 105, 5, 9),
-    (1, 106, 6, 12),
-    (1, 107, 7, 15),
-    (1, 108, 8, 18),
-    (1, 109, 9, 13),
-    (1, 110, 10, 11),
-    (1, 111, 11, 10),
-    (1, 112, 12, 8),
-    # L�nea 2 expreso
-    (2, 101, 1, 0),
-    (2, 105, 2, 5),
-    (2, 108, 3, 9),
-]
 
-
-def seed_initial_data(session: Session) -> None:
-    if session.query(models.Line).count() > 0:
-        return
-
-    session.bulk_save_objects([models.Stop(**stop) for stop in STOPS])
-    session.bulk_save_objects([models.Line(**line) for line in LINES])
-    session.flush()
-
-    for line_id, stop_id, seq, minutes in LINE_STOPS:
-        session.add(
-            models.LineStop(
-                line_id=line_id,
-                stop_id=stop_id,
-                sequence=seq,
-                travel_minutes=minutes,
+def seed_initial_data(session_factory) -> None:
+    session: Session = session_factory()
+    try:
+        if session.query(models.ScheduleCard).count():
+            return
+        for idx, card in enumerate(DEFAULT_SCHEDULE_CARDS, start=1):
+            session.add(
+                models.ScheduleCard(
+                    slug=card["slug"],
+                    line_code=card["line_code"],
+                    line_name=card["line_name"],
+                    line_badge=card["line_badge"],
+                    line_color=card["line_color"],
+                    service_name=card["service_name"],
+                    description=card["description"],
+                    blocks=card["blocks"],
+                    orden=idx,
+                )
             )
-        )
-    session.commit()
+        session.commit()
+    finally:
+        session.close()

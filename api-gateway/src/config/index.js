@@ -26,6 +26,7 @@ const config = {
   requestTimeoutMs: toInt(process.env.REQUEST_TIMEOUT_MS, 8000),
   services: {
     usuarios: process.env.USERS_SERVICE_URL || 'http://localhost:3000',
+    transporte: process.env.TRANSPORTE_SERVICE_URL || 'http://localhost:5000',
   },
 };
 

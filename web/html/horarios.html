@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EtxeBus - Horarios</title>
+  <link rel="stylesheet" href="../css/horarios.css">
+</head>
+<body>
+  <header class="horarios-header">
+    <a class="brand" href="principal.html">
+      <img src="../image/logo.png" alt="Logo EtxeBus">
+      <div>
+        <strong>EtxeBus</strong>
+        <p>Transporte local de Etxebarri</p>
+      </div>
+    </a>
+    <nav>
+      <a class="nav-link" href="lineas.html">Lineas</a>
+      <a class="nav-link active" href="horarios.html">Horarios</a>
+      <a class="nav-link" href="principal.html">Trayecto</a>
+    </nav>
+    <div class="header-actions">
+      <button class="header-icon" type="button" aria-label="Favoritos">
+        <svg viewBox="0 0 24 24"><path d="M12 3l2.5 4.9 5.4.8-3.9 3.8.9 5.6L12 15.8 7.1 18.1l.9-5.6-3.9-3.8 5.4-.8z"/></svg>
+      </button>
+      <button class="header-icon" type="button" aria-label="Perfil">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 12a4 4 0 100-8 4 4 0 000 8z" fill="currentColor"/>
+          <path d="M5 20c0-3.3 3.1-6 7-6s7 2.7 7 6v1H5z" fill="currentColor"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="horarios-main">
+    <section class="intro-panel">
+      <h2>Horarios oficiales EtxeBus</h2>
+      <p>
+        Consulta los horarios actualizados de las lineas urbanas. Se obtienen directamente de la base de datos de transporte,
+        asi que cualquier ajuste publicado por operaciones quedara reflejado aqui sin tocar el frontend.
+      </p>
+    </section>
+
+    <p id="schedule-status" class="schedule-status" role="status">Cargando horarios...</p>
+    <section class="schedule-grid" id="schedule-grid" aria-live="polite"></section>
+  </main>
+
+  <script src="../js/horarios.js"></script>
+</body>
+</html>

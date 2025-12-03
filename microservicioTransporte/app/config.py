@@ -1,16 +1,25 @@
-from pydantic_settings import BaseSettings
+from __future__ import annotations
+
+from functools import lru_cache
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    app_name: str = "Microservicio Transporte"
-    database_url: str = "postgresql+psycopg2://etxebus:etxebus@transporte-db:5432/etxebus_transporte"
-    default_headway_minutes: int = 12
-    service_start_hour: int = 5
+    """Application configuration pulled from the environment."""
+
+    app_name: str = "microservicioTransporte"
+    database_url: str = "postgresql+psycopg2://etxebus:etxebus@localhost:5432/etxebus_transporte"
     timezone: str = "UTC"
 
-    class Config:
-        env_prefix = "TRANSPORTE_"
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_prefix="TRANSPORTE_",
+        case_sensitive=False,
+        extra="ignore",
+    )
 
 
+@lru_cache
 def get_settings() -> Settings:
     return Settings()

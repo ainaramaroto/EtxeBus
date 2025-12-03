@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EtxeBus · Lineas</title>
+  <link rel="stylesheet" href="../css/lineas.css">
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+</head>
+<body>
+  <header class="lines-header">
+    <a class="brand" href="principal.html">
+      <img src="../image/logo.png" alt="Logo EtxeBus">
+      <div>
+        <strong>EtxeBus</strong>
+        <p>Transporte local de Etxebarri</p>
+      </div>
+    </a>
+    <nav>
+      <a class="nav-link active" href="lineas.html">Lineas</a>
+      <a class="nav-link" href="horarios.html">Horarios</a>
+      <a class="nav-link" href="principal.html">Trayecto</a>
+    </nav>
+    <div class="header-actions">
+      <button class="header-icon" type="button" aria-label="Favoritos">
+        <svg viewBox="0 0 24 24"><path d="M12 3l2.5 4.9 5.4.8-3.9 3.8.9 5.6L12 15.8 7.1 18.1l.9-5.6-3.9-3.8 5.4-.8z"/></svg>
+      </button>
+      <button class="header-icon" type="button" aria-label="Perfil">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 12a4 4 0 100-8 4 4 0 000 8z" fill="currentColor"/>
+          <path d="M5 20c0-3.3 3.1-6 7-6s7 2.7 7 6v1H5z" fill="currentColor"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="lines-main">
+    <aside class="lines-sidebar">
+      <div class="sidebar-header">
+        <h2>Lineas</h2>
+        <p>Selecciona una ruta para ver sus paradas.</p>
+      </div>
+      <div class="line-buttons">
+        <button class="line-btn is-active" data-line="l1-metro">
+          <span class="line-chip">Linea 1</span>
+          <div class="line-btn-text">
+            <span class="line-name">Metro</span>
+            <small>Subida St. Marina</small>
+          </div>
+        </button>
+        <button class="line-btn" data-line="l1-santamarina">
+          <span class="line-chip">Linea 1</span>
+          <div class="line-btn-text">
+            <span class="line-name">Santa Marina</span>
+            <small>Bajada Metro</small>
+          </div>
+        </button>
+        <button class="line-btn" data-line="l2-labur">
+          <span class="line-chip">Linea 2</span>
+          <div class="line-btn-text">
+            <span class="line-name">Labur</span>
+            <small>Boquete directo</small>
+          </div>
+        </button>
+        <button class="line-btn" data-line="l2-luze">
+          <span class="line-chip">Linea 2</span>
+          <div class="line-btn-text">
+            <span class="line-name">Luze</span>
+            <small>Polig. + Boquete</small>
+          </div>
+        </button>
+      </div>
+    </aside>
+
+    <section class="line-detail" id="line-detail">
+      <div class="line-title">
+        <span class="line-pill" id="line-pill">Linea 1</span>
+        <div>
+          <h3 id="line-name">Linea seleccionada</h3>
+          <p id="line-description">Descripcion de la linea.</p>
+        </div>
+      </div>
+      <ol class="line-stops" id="line-stops"></ol>
+    </section>
+
+    <div class="line-extra">
+      <div class="info-card">
+        <div class="tag">
+          <span id="line-type">Tipo de servicio</span>
+        </div>
+        <h4>Informacion general</h4>
+        <p id="line-info">
+          Selecciona una linea para consultar su recorrido completo, color oficial y paradas destacadas.
+        </p>
+      </div>
+      <div class="line-map-card">
+        <div id="mini-map" role="region" aria-label="Mapa previo de la linea"></div>
+      </div>
+    </div>
+  </main>
+
+  <script src="../js/lineas.js"></script>
+</body>
+</html>
+
+
+

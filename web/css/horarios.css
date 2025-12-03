@@ -1,0 +1,278 @@
+:root {
+  --page-bg: #f4f6fb;
+  --text-color: #1d3557;
+  --muted-color: #5c6b80;
+  --card-bg: #ffffff;
+  --border-color: #dfe6f3;
+  --brand-blue: #0f5f97;
+  --brand-blue-dark: #0b3f6b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  background-color: var(--page-bg);
+  color: var(--text-color);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.horarios-header {
+  background: var(--brand-blue);
+  color: #fff;
+  padding: 1rem 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  box-shadow: 0 8px 20px rgba(13, 59, 102, 0.25);
+}
+
+.horarios-header .brand {
+  text-decoration: none;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.horarios-header .brand img {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18);
+}
+
+.horarios-header .brand p {
+  margin: 0;
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.horarios-header nav {
+  display: flex;
+  flex: 1;
+  justify-content: center;
+  gap: 2.5rem;
+}
+
+.horarios-header .nav-link {
+  position: relative;
+  color: rgba(255, 255, 255, 0.85);
+  text-decoration: none;
+  font-weight: 600;
+  padding-bottom: 0.15rem;
+  transition: color 0.2s ease;
+}
+
+.horarios-header .nav-link:hover,
+.horarios-header .nav-link.active {
+  color: #fff;
+}
+
+.horarios-header .nav-link.active::after,
+.horarios-header .nav-link:hover::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -6px;
+  height: 3px;
+  border-radius: 999px;
+  background: #ffd166;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.header-icon {
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.25);
+}
+
+.header-icon:first-child {
+  color: #ffd166;
+}
+
+.header-icon svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}
+
+.horarios-main {
+  flex: 1;
+  padding: 2rem clamp(1rem, 4vw, 3rem) 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.schedule-status {
+  margin: 0 clamp(1rem, 4vw, 3rem);
+  color: var(--muted-color);
+  font-weight: 600;
+}
+
+.schedule-status.error {
+  color: #b71c1c;
+}
+
+.schedule-status.is-hidden {
+  display: none;
+}
+
+.intro-panel {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 2rem;
+  box-shadow: 0 16px 40px rgba(14, 39, 71, 0.1);
+}
+
+.intro-panel h2 {
+  margin: 0;
+  font-size: 1.95rem;
+}
+
+.intro-panel p {
+  margin: 0.35rem 0 0;
+  color: var(--muted-color);
+  line-height: 1.5;
+}
+
+.schedule-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+.schedule-card {
+  background: var(--card-bg);
+  border-radius: 24px;
+  padding: 1.5rem;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 12px 30px rgba(12, 32, 63, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.schedule-card.linea1 {
+  --line-color: #0074d9;
+}
+
+.schedule-card.linea1-retorno {
+  --line-color: #ffc107;
+}
+
+.schedule-card.linea2-luze {
+  --line-color: #1b8f3a;
+}
+
+.schedule-card.linea2-labur {
+  --line-color: #c6ff00;
+}
+
+.schedule-card h3 {
+  margin: 0;
+  font-size: 1.35rem;
+  color: var(--line-color, var(--text-color));
+}
+
+.schedule-card .subtitle {
+  margin: 0;
+  color: var(--muted-color);
+  font-weight: 600;
+}
+
+.block-subtitle {
+  margin: 0 0 0.4rem;
+  font-size: 0.95rem;
+  color: var(--muted-color);
+  font-weight: 600;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: color-mix(in srgb, var(--line-color) 20%, #fff);
+  color: var(--line-color);
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.schedule-table {
+  width: 100%;
+  border-collapse: collapse;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  margin-bottom: 1rem;
+}
+
+.schedule-table th {
+  background: color-mix(in srgb, var(--line-color) 20%, #ffffff);
+  color: var(--line-color);
+  padding: 0.65rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.schedule-table td {
+  text-align: center;
+  padding: 0.5rem;
+  border-top: 1px solid var(--border-color);
+  font-weight: 600;
+}
+
+.schedule-section {
+  margin-bottom: 1.5rem;
+}
+
+.schedule-section h4 {
+  margin: 0 0 0.4rem;
+  color: var(--line-color);
+  font-size: 1rem;
+}
+
+.notes {
+  font-size: 0.9rem;
+  color: var(--muted-color);
+  margin-top: 0.25rem;
+}
+
+.schedule-table td strong {
+  color: var(--line-color, #0f5f97);
+}
+
+@media (max-width: 720px) {
+  .horarios-header {
+    flex-direction: column;
+    padding: 1rem;
+  }
+
+  .intro-panel {
+    padding: 1.25rem;
+  }
+}

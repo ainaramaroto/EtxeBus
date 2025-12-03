@@ -20,6 +20,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   botones.forEach((boton) => {
     boton.addEventListener('click', () => {
+      if (boton.dataset.link) {
+        window.location.href = boton.dataset.link;
+        return;
+      }
       alert(`Has pulsado: ${boton.innerText}`);
       // Aqui podrias cargar contenido dinamico o mostrar info relacionada
     });

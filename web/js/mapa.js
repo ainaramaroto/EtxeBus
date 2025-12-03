@@ -6,28 +6,87 @@ const CENTRO_ETXEBARRI = [-2.888064738494468, 43.24850496812509];
 
 const map = new mapboxgl.Map({
   container: 'map',
-  style: 'mapbox://styles/mapbox/streets-v12',
+  style: 'mapbox://styles/mapbox/light-v11',
   center: CENTRO_ETXEBARRI,
   zoom: 14
 });
 
 // === Paradas (lng, lat) ===
-const paradas = [
-  { nombre: "Parada Metro Etxebarri", coord: [-2.8967772404717302, 43.24397173609036] },
-  { nombre: "Parada Metacal Kalea", coord: [-2.8937088759947267, 43.24492992719602] },
-  { nombre: "Parada Doneztebe Eliza", coord: [-2.891122115319937,  43.24598755268646] },
-  { nombre: "Parada San Antonio Hiribidea", coord: [-2.8872862407224327, 43.24702874476444] },
-  { nombre: "Parada Kukullaga Ikastetxea", coord: [-2.8861488323489226, 43.24901769897248] },
-  { nombre: "Parada Kiroldegia", coord: [-2.8841071166975185, 43.25066808714677] },
-  { nombre: "Parada Galicia Kalea", coord: [-2.883330180290336, 43.252660853827855] },
-  { nombre: "Parada Galicia Kalea 2", coord: [-2.882623819357687, 43.25345316885862] },
-  { nombre: "Parada Santa Marina", coord: [-2.883024510937969, 43.255890099999405] },
-  { nombre: "Parada IES Etxebarri BHI", coord: [-2.884890897506966, 43.25343406150203] },
-  { nombre: "Parada Goiko San Antonio Hiribidea", coord: [-2.8839558722117618, 43.25103331923095] },
-  { nombre: "Parada Marivi Iturbe Kalea", coord: [-2.886034033873555, 43.248992351853026] },
-  { nombre: "Parada Beheko San Antonio Hiribidea", coord: [-2.8874842700078407, 43.24717715469667] },
-  { nombre: "Parada Doneztebe Eliza 2", coord: [-2.8912215474404075, 43.246038806411484] },
-  { nombre: "Parada Metacal Kalea 2", coord: [-2.893827387294854, 43.24495873405763] }
+const paradasLinea1 = [
+  { nombre: "L1 Metro Etxebarri", coord: [-2.8967772404717302, 43.24397173609036] },
+  { nombre: "L1 Metacal Kalea", coord: [-2.8937088759947267, 43.24492992719602] },
+  { nombre: "L1 Doneztebe Eliza", coord: [-2.891122115319937,  43.24598755268646] },
+  { nombre: "L1 San Antonio Hiribidea", coord: [-2.8872862407224327, 43.24702874476444] },
+  { nombre: "L1 Kukullaga Ikastetxea", coord: [-2.8861488323489226, 43.24901769897248] },
+  { nombre: "L1 Kiroldegia", coord: [-2.8841071166975185, 43.25066808714677] },
+  { nombre: "L1 Galicia Kalea", coord: [-2.883330180290336, 43.252660853827855] },
+  { nombre: "L1 Galicia Kalea Goikoa", coord: [-2.882623819357687, 43.25345316885862] },
+  { nombre: "L1 Santa Marina", coord: [-2.883024510937969, 43.255890099999405] },
+  { nombre: "L1 IES Etxebarri BHI", coord: [-2.884890897506966, 43.25343406150203] },
+  { nombre: "L1 Goiko San Antonio Hiribidea", coord: [-2.8839558722117618, 43.25103331923095] },
+  { nombre: "L1 Marivi Iturbe Kalea", coord: [-2.886034033873555, 43.248992351853026] },
+  { nombre: "L1 Beheko San Antonio Hiribidea", coord: [-2.8874842700078407, 43.24717715469667] },
+  { nombre: "L1 Doneztebe Eliza", coord: [-2.8912215474404075, 43.246038806411484] },
+  { nombre: "L1 Metacal Kalea", coord: [-2.893827387294854, 43.24495873405763] }
+];
+
+const LINEA2_POLIGONO_PARADAS = [
+  { nombre: "L2 Fuenlabrada Kalea", coord: [-2.8937310550466755, 43.247315355022344] },
+  { nombre: "L2 Errota/Molino", coord: [-2.8945549868126155, 43.24877093455157] },
+  { nombre: "L2 Nerbioi", coord: [-2.8913247323607556, 43.251203598727216] },
+  { nombre: "L2 La Fabrica", coord: [-2.893783993275475, 43.24925780608985] }
+];
+const FUENLABRADA_ENTRADA = [-2.894916, 43.246515];
+const LINEA2_BOKETE_PARADAS = [
+  { nombre: "L2 Lezama Legizamon", coord: [-2.896714203551309, 43.247736109456135] },
+  { nombre: "L2 Tomás Meabe", coord: [-2.9001729580517575, 43.24544512460776] },
+  { nombre: "L2 Zubialdea (El Boquete)", coord: [-2.904239398789997, 43.24439361613609] },
+  { nombre: "L2 Zubialdea (El Boquete)", coord: [-2.9037884717608153, 43.24396966288082] },
+  { nombre: "L2 Tomás Meabe", coord: [-2.9000632950565217, 43.245410025230086] },
+  { nombre: "L2 Lezama Legizamon", coord: [-2.896459984789626, 43.24780509523457] },
+  { nombre: "L2 Fuenlabrada Kalea", coord: [-2.8943843007617427, 43.246974801859636] }
+];
+
+const paradas = [...paradasLinea1, ...LINEA2_POLIGONO_PARADAS, ...LINEA2_BOKETE_PARADAS];
+
+const METRO_COORD = paradasLinea1[0].coord;
+const LINEA2_ROTONDA = [-2.895042288566618, 43.24848058651014];
+const LINEA2_BOKETE_RETORNO = [-2.9046724606433934, 43.24462875070237];
+const LINEA2_POLIGONO_COORDS = LINEA2_POLIGONO_PARADAS.map(p => p.coord);
+const LINEA2_BOKETE_COORDS = LINEA2_BOKETE_PARADAS.map(p => p.coord);
+const LINEA2_BOKETE_SEGMENT = [
+  ...LINEA2_BOKETE_COORDS.slice(0, 3),
+  LINEA2_BOKETE_RETORNO,
+  ...LINEA2_BOKETE_COORDS.slice(3)
+];
+const LINEA2_POLIGONO_RUTA = [
+  METRO_COORD,
+  FUENLABRADA_ENTRADA,
+  ...LINEA2_POLIGONO_COORDS,
+  METRO_COORD
+];
+const LINEA2_BOKETE_LARGO_RUTA = [
+  METRO_COORD,
+  FUENLABRADA_ENTRADA,
+  ...LINEA2_POLIGONO_COORDS,
+  LINEA2_ROTONDA,
+  ...LINEA2_BOKETE_SEGMENT,
+  METRO_COORD
+];
+const LINEA2_BOKETE_CORTO_RUTA = [
+  METRO_COORD,
+  FUENLABRADA_ENTRADA,
+  LINEA2_ROTONDA,
+  ...LINEA2_BOKETE_SEGMENT,
+  METRO_COORD
+];
+
+// Puntos intermedios para forzar la rotonda y la entrada al parking del metro
+const VUELTA_METRO_LOOP = [
+  [-2.896769, 43.244994], // Acercamiento final al metro siguiendo el trazado de ida
+  [-2.896929, 43.244753], // Entrada a la rotonda
+  [-2.897663, 43.244142], // Giro interior de la rotonda
+  [-2.897483, 43.244004]  // Entrada al parking del metro
 ];
 
 // ===== Helpers Directions API =====
@@ -69,16 +128,12 @@ function loadImagePromise(map, url, name, options = {}) {
     });
   });
 }
-const ARROW_BLUE_SVG =
-  'data:image/svg+xml;utf8,' +
-  encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24">
-    <path d="M3 12h14l-4.5-4.5 1.4-1.4L21 12l-7.1 5.9-1.4-1.4L17 12H3z" fill="#0074D9"/>
-  </svg>`);
-const ARROW_YELLOW_SVG =
-  'data:image/svg+xml;utf8,' +
-  encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24">
-    <path d="M3 12h14l-4.5-4.5 1.4-1.4L21 12l-7.1 5.9-1.4-1.4L17 12H3z" fill="#FFC107"/>
-  </svg>`);
+// Mapbox solo admite PNG/JPEG para loadImage, asi que usamos pequeñas imagenes base64
+const ARROW_BLUE_PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAYAAAByDd+UAAAAaklEQVR4nO2TwRHAIAgEgWbSoGXQYKpJnpkxk1EP8JPbv67LoAghJJV2XqtHLCxblGpI1uOH1hR+XdzGtfhIQanBQlCqIeGEQLpHacaqD/FHWlvo75HbTlmsEPyLtlOWVzghyqFiown5HzdzcCpDMj3R+gAAAABJRU5ErkJggg==';
+const ARROW_YELLOW_PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAYAAAByDd+UAAAAaklEQVR4nO2TOxLAIAhEXZocy7PnWKm0jZNkgnxs3NfDYxkohRASSTuPNlsjXtmsFB7Zo1m9kJLwq7EmrXmlVqlYhVYpPEKVoI5DIeLU/8BNmpoQLyuXlTJXQusvykpZWEKNKISMiyZkQzqB3zcrE+J1PgAAAABJRU5ErkJggg==';
+const ARROW_LIGHT_GREEN_PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAYAAAByDd+UAAAAbklEQVR4nO2TwRGAMAgEA2XYh+VQneXYh23o18noSA7Ix9t/slmGtEYIyWQ71nP0jEZlo1KJyHps2aWk8O1iTy08UlSqqBCVSkToEVj3KMlY9S/sJi0ttIeR60xZqBD9izpTllboEaVQsdGE/JALcDc3B0XgVmwAAAAASUVORK5CYII=';
+const ARROW_GREEN_PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAYAAAByDd+UAAAAbklEQVR4nO2TwRGAMAgEA23YiV1ZiV3ZCXXo18noSA7Ix9t/slmGtEYIyWTZ13P0jEZlo1KJyHpsO6Sk8O1iTy08UlSqqBCVSkToEVj3KMlY9S/sJi0ttIeR60xZqBD9izpTllboEaVQsdGE/JALvZMzn94WUoEAAAAASUVORK5CYII=';
+const ARROW_ORANGE_PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAYAAAByDd+UAAAAZ0lEQVR4nO2TQQ7AIAgEgWfx//gtvTamjbigl+7cYVgCIoSQSlqXvltjWdmuVDOyGdd1PyjhV+NIWnilqNRQISrVjDAi8GkorTj1Ff6QHk3oLyu3m7JUQvQX7aasLGFEVMKJiybkhwyz9iwjimj4ZwAAAABJRU5ErkJggg==';
 
 // Utilidades
 function sliceWaypoints(aIdx, bIdx) {
@@ -97,6 +152,9 @@ map.on('load', async () => {
   // ====== Rutas ida/vuelta ======
   map.addSource('ruta-ida',    { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] } } });
   map.addSource('ruta-vuelta', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] } } });
+  map.addSource('linea2-poligono',      { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] } } });
+  map.addSource('linea2-bokete-largo',  { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] } } });
+  map.addSource('linea2-bokete-corto',  { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] } } });
 
   map.addLayer({
     id: 'linea-ida',
@@ -112,6 +170,27 @@ map.on('load', async () => {
     layout: { 'line-join': 'round', 'line-cap': 'round' },
     paint: { 'line-color': '#FFC107', 'line-width': 4, 'line-dasharray': [2, 2] }
   });
+  map.addLayer({
+    id: 'linea2-poligono',
+    type: 'line',
+    source: 'linea2-poligono',
+    layout: { 'line-join': 'round', 'line-cap': 'round' },
+    paint: { 'line-color': '#2ECC40', 'line-width': 4 }
+  });
+  map.addLayer({
+    id: 'linea2-bokete-largo',
+    type: 'line',
+    source: 'linea2-bokete-largo',
+    layout: { 'line-join': 'round', 'line-cap': 'round' },
+    paint: { 'line-color': '#1B8F3A', 'line-width': 4 }
+  });
+  map.addLayer({
+    id: 'linea2-bokete-corto',
+    type: 'line',
+    source: 'linea2-bokete-corto',
+    layout: { 'line-join': 'round', 'line-cap': 'round' },
+    paint: { 'line-color': '#C6FF00', 'line-width': 4, 'line-dasharray': [3, 3] }
+  });
 
   // Cálculo de rutas
   const idxMetro = paradas.findIndex(p => p.nombre.toLowerCase().includes('metro etxebarri'));
@@ -126,26 +205,54 @@ map.on('load', async () => {
 
       // VUELTA: Santa Marina → IES → Goiko→ Metro
       const vueltaOrdenNombres = [
-        "Parada Santa Marina",
-        "Parada IES Etxebarri BHI",
-        "Parada Goiko San Antonio Hiribidea",
-        "Parada Marivi Iturbe Kalea",
-        "Parada Beheko San Antonio Hiribidea",
-        "Parada Doneztebe Eliza 2",
-        "Parada Metacal Kalea 2",
-        "Parada Metro Etxebarri"
+        "L1 Santa Marina",
+        "L1 IES Etxebarri BHI",
+        "L1 Goiko San Antonio Hiribidea",
+        "L1 Marivi Iturbe Kalea",
+        "L1 Beheko San Antonio Hiribidea",
+        "L1 Doneztebe Eliza 2",
+        "L1 Metacal Kalea 2",
+        "L1 Metro Etxebarri"
       ];
-      const vueltaWaypoints = vueltaOrdenNombres.map(coordByName).filter(Boolean);
+      const vueltaWaypointsBase = vueltaOrdenNombres.map(coordByName).filter(Boolean);
+      const vueltaWaypoints = vueltaWaypointsBase.length >= 2
+        ? [
+            ...vueltaWaypointsBase.slice(0, -1),
+            ...VUELTA_METRO_LOOP,
+            vueltaWaypointsBase[vueltaWaypointsBase.length - 1]
+          ]
+        : vueltaWaypointsBase;
       const vueltaGeom = await buildRouteFromWaypoints(vueltaWaypoints);
       map.getSource('ruta-vuelta').setData({ type: 'Feature', geometry: vueltaGeom });
     } catch (e) { console.error(e); }
   }
 
+  // Línea 2 (Polígono, Bokete largo y corto)
+  try {
+    if (LINEA2_POLIGONO_RUTA.length >= 2) {
+      const poligonoGeom = await buildRouteFromWaypoints(LINEA2_POLIGONO_RUTA);
+      map.getSource('linea2-poligono').setData({ type: 'Feature', geometry: poligonoGeom });
+    }
+    if (LINEA2_BOKETE_LARGO_RUTA.length >= 2) {
+      const boketeLargoGeom = await buildRouteFromWaypoints(LINEA2_BOKETE_LARGO_RUTA);
+      map.getSource('linea2-bokete-largo').setData({ type: 'Feature', geometry: boketeLargoGeom });
+    }
+    if (LINEA2_BOKETE_CORTO_RUTA.length >= 2) {
+      const boketeCortoGeom = await buildRouteFromWaypoints(LINEA2_BOKETE_CORTO_RUTA);
+      map.getSource('linea2-bokete-corto').setData({ type: 'Feature', geometry: boketeCortoGeom });
+    }
+  } catch (error) {
+    console.error('No se pudieron dibujar las variantes de la línea 2', error);
+  }
+
   // Flechas sobre las líneas
   try {
     await Promise.all([
-      loadImagePromise(map, ARROW_BLUE_SVG,   'flecha-azul'),
-      loadImagePromise(map, ARROW_YELLOW_SVG, 'flecha-amarilla')
+      loadImagePromise(map, ARROW_BLUE_PNG,        'flecha-azul'),
+      loadImagePromise(map, ARROW_YELLOW_PNG,      'flecha-amarilla'),
+      loadImagePromise(map, ARROW_LIGHT_GREEN_PNG, 'flecha-verde-claro'),
+      loadImagePromise(map, ARROW_GREEN_PNG,       'flecha-verde'),
+      loadImagePromise(map, ARROW_ORANGE_PNG,      'flecha-naranja')
     ]);
     map.addLayer({
       id: 'flechas-ida',
@@ -158,6 +265,24 @@ map.on('load', async () => {
       type: 'symbol',
       source: 'ruta-vuelta',
       layout: { 'symbol-placement': 'line', 'symbol-spacing': 50, 'icon-image': 'flecha-amarilla', 'icon-size': 0.8 }
+    });
+    map.addLayer({
+      id: 'flechas-linea2-poligono',
+      type: 'symbol',
+      source: 'linea2-poligono',
+      layout: { 'symbol-placement': 'line', 'symbol-spacing': 50, 'icon-image': 'flecha-verde', 'icon-size': 0.8 }
+    });
+    map.addLayer({
+      id: 'flechas-linea2-bokete-largo',
+      type: 'symbol',
+      source: 'linea2-bokete-largo',
+      layout: { 'symbol-placement': 'line', 'symbol-spacing': 50, 'icon-image': 'flecha-verde-claro', 'icon-size': 0.8 }
+    });
+    map.addLayer({
+      id: 'flechas-linea2-bokete-corto',
+      type: 'symbol',
+      source: 'linea2-bokete-corto',
+      layout: { 'symbol-placement': 'line', 'symbol-spacing': 50, 'icon-image': 'flecha-naranja', 'icon-size': 0.8 }
     });
   } catch (error) {
     console.warn('No se pudieron cargar las flechas de dirección', error);

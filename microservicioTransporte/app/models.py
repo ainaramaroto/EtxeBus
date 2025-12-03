@@ -1,50 +1,94 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, UniqueConstraint
-from sqlalchemy.orm import declarative_base, relationship
+from __future__ import annotations
 
-Base = declarative_base()
+from decimal import Decimal
+
+from sqlalchemy import Float, ForeignKey, JSON, Numeric, String, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from .database import Base
 
 
 class Line(Base):
-    __tablename__ = "transport_lines"
+    __tablename__ = "linea"
 
-    id = Column(Integer, primary_key=True)
-    code = Column(String(10), unique=True, nullable=False)
-    name = Column(String(120), nullable=False)
-    description = Column(String(255), nullable=True)
-    color = Column(String(16), nullable=False, default="#0f5f97")
-    headway_minutes = Column(Integer, nullable=False, default=12)
+    idLinea: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    nomLinea: Mapped[str] = mapped_column(String(40))
+    color: Mapped[str | None] = mapped_column(String(10), nullable=True)
 
-    stops = relationship(
-        "LineStop",
-        back_populates="line",
+    paradas: Mapped[list["Stop"]] = relationship(
+        back_populates="linea",
         cascade="all, delete-orphan",
-        order_by="LineStop.sequence",
+    )
+    horarios: Mapped[list["Schedule"]] = relationship(
+        back_populates="linea",
+        cascade="all, delete-orphan",
     )
 
 
 class Stop(Base):
-    __tablename__ = "transport_stops"
+    __tablename__ = "parada"
 
-    id = Column(Integer, primary_key=True)
-    code = Column(String(12), unique=True, nullable=False)
-    name = Column(String(150), nullable=False)
-    latitude = Column(Float, nullable=False)
-    longitude = Column(Float, nullable=False)
+    idParada: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    nombre: Mapped[str] = mapped_column(String(25))
+    coordX: Mapped[Decimal | None] = mapped_column(Numeric(10, 6), nullable=True)
+    coordY: Mapped[Decimal | None] = mapped_column(Numeric(10, 6), nullable=True)
+    idLinea: Mapped[int] = mapped_column(ForeignKey("linea.idLinea"))
 
-    lines = relationship("LineStop", back_populates="stop", cascade="all, delete-orphan")
+    linea: Mapped["Line"] = relationship(back_populates="paradas")
+    horarios: Mapped[list["Schedule"]] = relationship(back_populates="parada")
+    trayectos_relacionados: Mapped[list["RouteStop"]] = relationship(back_populates="parada")
 
 
-class LineStop(Base):
-    __tablename__ = "transport_line_stops"
-    __table_args__ = (
-        UniqueConstraint("line_id", "stop_id", name="uq_line_stop"),
+class Route(Base):
+    __tablename__ = "trayecto"
+
+    idTrayecto: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    idOrigen: Mapped[int] = mapped_column(ForeignKey("parada.idParada"))
+    idDestino: Mapped[int] = mapped_column(ForeignKey("parada.idParada"))
+    duracionEstm: Mapped[float | None] = mapped_column(Float(2), nullable=True)
+
+    origen: Mapped["Stop"] = relationship(foreign_keys=[idOrigen])
+    destino: Mapped["Stop"] = relationship(foreign_keys=[idDestino])
+    paradas: Mapped[list["RouteStop"]] = relationship(
+        back_populates="trayecto",
+        cascade="all, delete-orphan",
     )
 
-    id = Column(Integer, primary_key=True)
-    line_id = Column(Integer, ForeignKey("transport_lines.id", ondelete="CASCADE"), nullable=False)
-    stop_id = Column(Integer, ForeignKey("transport_stops.id", ondelete="CASCADE"), nullable=False)
-    sequence = Column(Integer, nullable=False)
-    travel_minutes = Column(Integer, nullable=False)
 
-    line = relationship("Line", back_populates="stops")
-    stop = relationship("Stop", back_populates="lines")
+class RouteStop(Base):
+    __tablename__ = "trayecto_parada"
+    __table_args__ = (UniqueConstraint("idTrayecto", "idParada", name="uq_trayecto_parada"),)
+
+    idTrayecto: Mapped[int] = mapped_column(ForeignKey("trayecto.idTrayecto"), primary_key=True)
+    idParada: Mapped[int] = mapped_column(ForeignKey("parada.idParada"), primary_key=True)
+    orden: Mapped[int | None] = mapped_column(nullable=True)
+
+    trayecto: Mapped["Route"] = relationship(back_populates="paradas")
+    parada: Mapped["Stop"] = relationship(back_populates="trayectos_relacionados")
+
+
+class Schedule(Base):
+    __tablename__ = "horario"
+
+    idHorario: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    hora: Mapped[float] = mapped_column(Float(2))
+    idLinea: Mapped[int] = mapped_column(ForeignKey("linea.idLinea"))
+    idParada: Mapped[int] = mapped_column(ForeignKey("parada.idParada"))
+
+    linea: Mapped["Line"] = relationship(back_populates="horarios")
+    parada: Mapped["Stop"] = relationship(back_populates="horarios")
+
+
+class ScheduleCard(Base):
+    __tablename__ = "horario_card"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    slug: Mapped[str] = mapped_column(String(64), unique=True)
+    line_code: Mapped[str] = mapped_column(String(20))
+    line_name: Mapped[str] = mapped_column(String(60))
+    line_badge: Mapped[str] = mapped_column(String(20))
+    line_color: Mapped[str] = mapped_column(String(12))
+    service_name: Mapped[str] = mapped_column(String(120))
+    description: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    blocks: Mapped[list[dict]] = mapped_column(JSON)
+    orden: Mapped[int] = mapped_column(default=0)
