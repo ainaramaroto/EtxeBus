@@ -46,8 +46,7 @@ const LINES_DATA = {
       'L2 Metro Etxebarri',
       'L2 Fuenlabrada Kalea',
       'L2 Errota/Molino',
-      'L2 Nerbioi',
-      'L2 La Fabrica',
+      'L2 Zuberoa Kalea',
       'L2 Lezama Legizamon',
       'L2 Tomas Meabe',
       'L2 Zubialdea (El Boquete)',
@@ -118,8 +117,7 @@ const LINEA2_BOKETE_RETORNO = [-2.9046724606433934, 43.24462875070237];
 const LINEA2_POLIGONO_COORDS = [
   [-2.8937310550466755, 43.247315355022344],
   [-2.8945549868126155, 43.24877093455157],
-  [-2.8913247323607556, 43.251203598727216],
-  [-2.893783993275475, 43.24925780608985]
+  [-2.89462322472418, 43.250428229805784]
 ];
 
 const LINEA2_BOKETE_PARADAS = [
@@ -158,14 +156,63 @@ const LINE_WAYPOINTS = {
   ]
 };
 
+const MINI_MAP_BASE_STYLE = 'mapbox://styles/mapbox/streets-v12';
+const MINI_MAP_MUTED_OVERRIDES = [
+  { ids: ['background'], property: 'background-color', value: '#f8fbff' },
+  { ids: ['land', 'landcover'], property: 'fill-color', value: '#f0f6ef' },
+  { ids: ['water', 'water-shadow'], property: 'fill-color', value: '#dfeefe' },
+  {
+    ids: [
+      'road-primary',
+      'road-secondary-tertiary',
+      'road-street',
+      'road-minor',
+      'road-major',
+      'road-major-link',
+      'road-trunk',
+      'bridge-primary',
+      'bridge-secondary-tertiary',
+      'bridge-major',
+      'bridge-street'
+    ],
+    property: 'line-color',
+    value: '#dfe6f6'
+  },
+  { ids: ['building'], property: 'fill-color', value: '#eef2fa' }
+];
+
+function setMiniMapPaint(instance, layerId, property, value) {
+  if (!instance || !layerId) return;
+  if (!instance.getLayer(layerId)) return;
+  try {
+    instance.setPaintProperty(layerId, property, value);
+  } catch (error) {
+    console.warn(`No se pudo ajustar ${property} en ${layerId}: ${error.message}`);
+  }
+}
+
+function applyMiniMapStyle(instance) {
+  if (!instance) return;
+  MINI_MAP_MUTED_OVERRIDES.forEach((override) => {
+    override.ids.forEach((layer) => setMiniMapPaint(instance, layer, override.property, override.value));
+  });
+}
+
 const routeCache = {};
+const PRECOMPUTED_ROUTE_ALIASES = {
+  'l1-metro': 'ruta-ida',
+  'l1-santamarina': 'ruta-vuelta',
+  'l2-luze': 'linea2-bokete-largo',
+  'l2-labur': 'linea2-bokete-corto'
+};
+const PRECOMPUTED_ROUTES = window.ETXEBUS_PRECOMPUTED_ROUTES || {};
 let miniMap;
 let miniMapReady = false;
 let pendingLineKey = 'l1-metro';
 let pendingColor = LINES_DATA['l1-metro'].color;
 const METRO_POINT = { coord: METRO_COORD, label: 'Metro', anchorTop: true };
 const SANTA_POINT = { coord: [-2.883024510937969, 43.255890099999405], label: 'Santa Marina' };
-const POLIGONO_POINT = { coord: [-2.8928, 43.2496], label: 'Poligono' };
+const POLIGONO_POINT = { coord: [-2.89462322472418, 43.250428229805784], label: 'Poligono' };
 const BOKETE_POINT = { coord: [-2.9039, 43.2441], label: 'Bokete' };
 const ROTONDA_POINT = { coord: LINEA2_ROTONDA, label: '', anchorTop: false };
 const LINE_MARKERS = {
@@ -227,23 +274,37 @@ document.addEventListener('DOMContentLoaded', () => {
 function initMiniMap() {
   const container = document.getElementById('mini-map');
   if (!container) return;
-
   miniMap = new mapboxgl.Map({
     container: 'mini-map',
-    style: 'mapbox://styles/mapbox/light-v11',
+    style: MINI_MAP_BASE_STYLE,
     center: [-2.8945, 43.2478],
     zoom: 14,
     attributionControl: false,
     interactive: false,
     logoPosition: 'bottom-right'
   });
+  window.ETXEBUS_LINE_MINIMAP = miniMap;
 
-  miniMap.on('load', () => {
-    miniMapReady = true;
+  if (miniMap.isStyleLoaded()) {
+    setupMiniMapLayers();
+  } else {
+    miniMap.on('load', setupMiniMapLayers);
+    miniMap.on('styledata', setupMiniMapLayers);
+  }
+}
+
+function setupMiniMapLayers() {
+  if (!miniMap || miniMapReady) return;
+  miniMapReady = true;
+  applyMiniMapStyle(miniMap);
+
+  if (!miniMap.getSource('line-preview')) {
     miniMap.addSource('line-preview', {
       type: 'geojson',
-      data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] } }
+      data: { type: 'FeatureCollection', features: [] }
     });
+  }
+  if (!miniMap.getLayer('line-preview')) {
     miniMap.addLayer({
       id: 'line-preview',
       type: 'line',
@@ -254,10 +315,14 @@ function initMiniMap() {
         'line-opacity': 0.9
       }
     });
+  }
+  if (!miniMap.getSource('line-stops')) {
     miniMap.addSource('line-stops', {
       type: 'geojson',
       data: { type: 'FeatureCollection', features: [] }
     });
+  }
+  if (!miniMap.getLayer('line-stops-circles')) {
     miniMap.addLayer({
       id: 'line-stops-circles',
       type: 'circle',
@@ -269,6 +334,8 @@ function initMiniMap() {
         'circle-stroke-width': 1
       }
     });
+  }
+  if (!miniMap.getLayer('line-stops-labels')) {
     miniMap.addLayer({
       id: 'line-stops-labels',
       type: 'symbol',
@@ -278,7 +345,8 @@ function initMiniMap() {
         'text-field': ['get', 'name'],
         'text-size': 11,
         'text-offset': [0, 1.2],
-        'text-anchor': 'top'
+        'text-anchor': 'top',
+        'text-allow-overlap': true
       },
       paint: {
         'text-color': '#0b2447',
@@ -286,8 +354,9 @@ function initMiniMap() {
         'text-halo-width': 1
       }
     });
-    updateMiniMap(pendingLineKey, pendingColor);
-  });
+  }
+
+  updateMiniMap(pendingLineKey, pendingColor);
 }
 
 async function updateMiniMap(key, color) {
@@ -297,7 +366,7 @@ async function updateMiniMap(key, color) {
 
   const source = miniMap.getSource('line-preview');
   if (!source) return;
-  source.setData({ type: 'Feature', geometry });
+  source.setData({ type: 'FeatureCollection', features: [{ type: 'Feature', geometry }] });
   miniMap.setPaintProperty('line-preview', 'line-color', color);
 
   const bounds = geometry.coordinates.reduce(
@@ -310,6 +379,13 @@ async function updateMiniMap(key, color) {
 
 async function getRouteGeometry(key) {
   if (routeCache[key]) return routeCache[key];
+  const alias = PRECOMPUTED_ROUTE_ALIASES[key];
+  const precomputed = alias ? PRECOMPUTED_ROUTES[alias] : null;
+  if (Array.isArray(precomputed) && precomputed.length > 1) {
+    const geometry = { type: 'LineString', coordinates: precomputed };
+    routeCache[key] = geometry;
+    return geometry;
+  }
   const coords = LINE_WAYPOINTS[key];
   if (!coords || coords.length < 2) return null;
   const geometry = await buildRouteFromWaypoints(coords);

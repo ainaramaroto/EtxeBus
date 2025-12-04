@@ -143,7 +143,7 @@ body {
   box-shadow: 0 30px 64px rgba(9, 33, 63, 0.28);
   align-self: stretch;
   max-height: 100%;
-  overflow-y: auto;
+  overflow: visible;
 }
 
 .action {
@@ -273,4 +273,9 @@ body {
 
 #map .mapboxgl-ctrl-logo {
   pointer-events: none;
+}
+
+#map .mapboxgl-ctrl-attrib a {
+  pointer-events: none;
+  color: inherit;
 }

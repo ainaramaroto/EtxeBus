@@ -22,6 +22,7 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  scrollbar-gutter: stable both-edges;
 }
 
 .lines-header {
@@ -418,6 +419,11 @@ body {
 
 #mini-map .mapboxgl-ctrl-logo {
   pointer-events: none;
+}
+
+#mini-map .mapboxgl-ctrl-attrib a {
+  pointer-events: none;
+  color: inherit;
 }
 
 
