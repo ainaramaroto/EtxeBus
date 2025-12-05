@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from .. import models, schemas
-from ..crud import create, delete, get_all, get_one, update
+from ..crud import create, delete, get_one, update
 from ..database import get_db
 
 router = APIRouter(prefix="/lineas", tags=["Lineas"])
@@ -12,7 +12,11 @@ router = APIRouter(prefix="/lineas", tags=["Lineas"])
 
 @router.get("/", response_model=list[schemas.Line])
 def list_lines(db: Session = Depends(get_db)):
-    return get_all(db, models.Line)
+    return (
+        db.query(models.Line)
+        .order_by(models.Line.orden, models.Line.idLinea)
+        .all()
+    )
 
 
 @router.get("/{line_id}", response_model=schemas.Line)

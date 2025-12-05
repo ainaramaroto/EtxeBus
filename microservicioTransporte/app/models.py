@@ -12,12 +12,18 @@ class Line(Base):
     __tablename__ = "linea"
 
     idLinea: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    slug: Mapped[str] = mapped_column(String(40), unique=True, index=True)
     nomLinea: Mapped[str] = mapped_column(String(40))
+    badge: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    subtitle: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    info: Mapped[str | None] = mapped_column(String(300), nullable=True)
     color: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    orden: Mapped[int] = mapped_column(default=0)
 
     paradas: Mapped[list["Stop"]] = relationship(
         back_populates="linea",
         cascade="all, delete-orphan",
+        order_by="Stop.orden",
     )
     horarios: Mapped[list["Schedule"]] = relationship(
         back_populates="linea",
@@ -29,10 +35,11 @@ class Stop(Base):
     __tablename__ = "parada"
 
     idParada: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    nombre: Mapped[str] = mapped_column(String(25))
+    nombre: Mapped[str] = mapped_column(String(80))
     coordX: Mapped[Decimal | None] = mapped_column(Numeric(10, 6), nullable=True)
     coordY: Mapped[Decimal | None] = mapped_column(Numeric(10, 6), nullable=True)
     idLinea: Mapped[int] = mapped_column(ForeignKey("linea.idLinea"))
+    orden: Mapped[int | None] = mapped_column(nullable=True)
 
     linea: Mapped["Line"] = relationship(back_populates="paradas")
     horarios: Mapped[list["Schedule"]] = relationship(back_populates="parada")

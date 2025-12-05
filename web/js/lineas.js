@@ -1,6 +1,8 @@
 mapboxgl.accessToken = 'pk.eyJ1IjoiaW5pZ29maWF0IiwiYSI6ImNtZ3psb3JhMTBnc2gybHI0dzZpOWpqYnYifQ.wAcZcyjV9eSJYxHNsn7vfg';
 
-const LINES_DATA = {
+const API_BASE_URL = window.ETXEBUS_API_BASE || 'http://localhost:4000/api';
+
+const FALLBACK_LINES = {
   'l1-metro': {
     name: 'Metro',
     badge: 'Linea 1',
@@ -77,6 +79,21 @@ const LINES_DATA = {
     ]
   }
 };
+
+const LINE_DEFAULT_KEY = 'l1-metro';
+const LINES_DATA = {};
+const lineStopPromises = new Map();
+let lineButtonsContainer;
+let lineButtons = [];
+let detailSection;
+let pillEl;
+let nameEl;
+let descEl;
+let infoEl;
+let typeEl;
+let stopsEl;
+let pendingLineKey = LINE_DEFAULT_KEY;
+let pendingColor = '#0074D9';
 
 const METRO_COORD = [-2.8967772404717302, 43.24397173609036];
 const VUELTA_METRO_LOOP = [
@@ -208,8 +225,6 @@ const PRECOMPUTED_ROUTE_ALIASES = {
 const PRECOMPUTED_ROUTES = window.ETXEBUS_PRECOMPUTED_ROUTES || {};
 let miniMap;
 let miniMapReady = false;
-let pendingLineKey = 'l1-metro';
-let pendingColor = LINES_DATA['l1-metro'].color;
 const METRO_POINT = { coord: METRO_COORD, label: 'Metro', anchorTop: true };
 const SANTA_POINT = { coord: [-2.883024510937969, 43.255890099999405], label: 'Santa Marina' };
 const POLIGONO_POINT = { coord: [-2.89462322472418, 43.250428229805784], label: 'Poligono' };
@@ -223,53 +238,280 @@ const LINE_MARKERS = {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-  const buttons = document.querySelectorAll('.line-btn');
-  const detail = document.getElementById('line-detail');
-  const pill = document.getElementById('line-pill');
-  const nameEl = document.getElementById('line-name');
-  const descEl = document.getElementById('line-description');
-  const infoEl = document.getElementById('line-info');
-  const typeEl = document.getElementById('line-type');
-  const stopsEl = document.getElementById('line-stops');
+  lineButtonsContainer = document.querySelector('.line-buttons');
+  detailSection = document.getElementById('line-detail');
+  pillEl = document.getElementById('line-pill');
+  nameEl = document.getElementById('line-name');
+  descEl = document.getElementById('line-description');
+  infoEl = document.getElementById('line-info');
+  typeEl = document.getElementById('line-type');
+  stopsEl = document.getElementById('line-stops');
 
-  buttons.forEach((btn) => {
-    const data = LINES_DATA[btn.dataset.line];
-    if (data) btn.style.setProperty('--accent', data.color);
+  bootstrapLineInterface();
+  initMiniMap();
+  window.addEventListener('resize', () => {
+    if (miniMap) {
+      miniMap.resize();
+    }
   });
+});
 
-  function renderLine(key) {
-    const line = LINES_DATA[key];
-    if (!line) return;
+async function bootstrapLineInterface() {
+  setSidebarMessage('Cargando lineas...');
+  try {
+    const apiLines = await fetchLinesFromApi();
+    ingestLines(apiLines);
+  } catch (error) {
+    console.warn('No se pudieron cargar las lineas desde el API, usando datos locales:', error);
+    useFallbackLines();
+  }
+  renderSidebarButtons();
+  const initialKey = selectInitialLineKey();
+  if (initialKey) {
+    renderLine(initialKey);
+  }
+  Object.keys(LINES_DATA).forEach((slug) => {
+    ensureStopsForLine(slug).catch((err) => console.warn(`No se pudieron cargar las paradas de ${slug}:`, err));
+  });
+}
 
-    detail.style.setProperty('--line-color', line.color);
-    pill.textContent = line.badge || line.name;
-    pill.style.background = line.color;
-    pill.style.color = '#fff';
-    nameEl.textContent = line.name;
-    descEl.textContent = line.subtitle;
-    typeEl.textContent = line.subtitle;
-    infoEl.textContent = line.info;
+function setSidebarMessage(message) {
+  if (!lineButtonsContainer) return;
+  lineButtonsContainer.innerHTML = '';
+  const placeholder = document.createElement('p');
+  placeholder.className = 'line-loading';
+  placeholder.textContent = message;
+  lineButtonsContainer.appendChild(placeholder);
+}
 
-    stopsEl.innerHTML = '';
-    line.stops.forEach((stop) => {
-      const li = document.createElement('li');
-      li.textContent = stop.replace(/^L\d\s/, '');
-      stopsEl.appendChild(li);
+async function fetchLinesFromApi() {
+  const response = await fetch(`${API_BASE_URL}/lineas`);
+  if (!response.ok) {
+    throw new Error(`Error ${response.status} al solicitar lineas`);
+  }
+  const payload = await response.json();
+  const lines = Array.isArray(payload?.data) ? payload.data : Array.isArray(payload) ? payload : [];
+  if (!lines.length) {
+    throw new Error('La API no devolvio lineas');
+  }
+  return lines;
+}
+
+async function fetchStopsFromApi(lineId) {
+  const response = await fetch(`${API_BASE_URL}/paradas?line_id=${lineId}`);
+  if (!response.ok) {
+    throw new Error(`Error ${response.status} al solicitar paradas`);
+  }
+  const payload = await response.json();
+  const stops = Array.isArray(payload?.data) ? payload.data : Array.isArray(payload) ? payload : [];
+  return stops;
+}
+
+function clearStoredLines() {
+  Object.keys(LINES_DATA).forEach((key) => delete LINES_DATA[key]);
+  lineStopPromises.clear();
+}
+
+function normalizeCoord(value) {
+  if (value === null || value === undefined) return null;
+  const parsed = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function normalizeStop(stop, index = 0) {
+  if (!stop) {
+    return { id: null, nombre: `Parada ${index + 1}`, orden: index + 1, coordX: null, coordY: null };
+  }
+  if (typeof stop === 'string') {
+    return { id: null, nombre: stop, orden: index + 1, coordX: null, coordY: null };
+  }
+  const nombre = stop.nombre || stop.label || `Parada ${index + 1}`;
+  const coordX = normalizeCoord(stop.coordX ?? stop.coord?.[0]);
+  const coordY = normalizeCoord(stop.coordY ?? stop.coord?.[1]);
+  return {
+    id: stop.idParada ?? stop.id ?? null,
+    nombre,
+    orden: stop.orden ?? index + 1,
+    coordX,
+    coordY,
+  };
+}
+
+function ingestLines(lines) {
+  clearStoredLines();
+  lines
+    .slice()
+    .sort((a, b) => {
+      const ordenA = a.orden ?? 0;
+      const ordenB = b.orden ?? 0;
+      if (ordenA !== ordenB) return ordenA - ordenB;
+      return (a.idLinea ?? 0) - (b.idLinea ?? 0);
+    })
+    .forEach((linea, index) => {
+      const slug = linea.slug || linea.identifier || linea.nomLinea?.toLowerCase().replace(/\s+/g, '-');
+      if (!slug) return;
+      const normalized = {
+        lineId: linea.idLinea ?? null,
+        slug,
+        name: linea.nomLinea || linea.name || `Linea ${index + 1}`,
+        badge: linea.badge || linea.line_badge || linea.nomLinea || linea.name || `Linea ${index + 1}`,
+        subtitle: linea.subtitle || linea.service_name || '',
+        info: linea.info || linea.description || '',
+        color: linea.color || linea.line_color || '#0b2447',
+        orden: linea.orden ?? index,
+        stops: [],
+        stopDetails: [],
+      };
+      if (Array.isArray(linea.stops) && linea.stops.length) {
+        const normalizedStops = linea.stops.map((stop, idx) => normalizeStop(stop, idx));
+        normalized.stopDetails = normalizedStops;
+        normalized.stops = normalizedStops.map((stop) => stop.nombre);
+      }
+      LINES_DATA[slug] = normalized;
     });
+  pendingColor = LINES_DATA[pendingLineKey]?.color || pendingColor;
+}
 
-    buttons.forEach((btn) => btn.classList.toggle('is-active', btn.dataset.line === key));
-    pendingLineKey = key;
-    pendingColor = line.color;
-    updateMiniMap(key, line.color);
+function useFallbackLines() {
+  clearStoredLines();
+  Object.entries(FALLBACK_LINES).forEach(([slug, data], index) => {
+    const stopDetails = (data.stops || []).map((stop, idx) => normalizeStop(stop, idx));
+    LINES_DATA[slug] = {
+      lineId: data.idLinea ?? null,
+      slug,
+      name: data.name,
+      badge: data.badge || data.name,
+      subtitle: data.subtitle || '',
+      info: data.info || '',
+      color: data.color || '#0b2447',
+      orden: data.orden ?? index,
+      stops: data.stops.slice(),
+      stopDetails,
+    };
+  });
+  pendingColor = LINES_DATA[pendingLineKey]?.color || pendingColor;
+}
+
+function selectInitialLineKey() {
+  if (LINES_DATA[LINE_DEFAULT_KEY]) return LINE_DEFAULT_KEY;
+  const ordered = Object.values(LINES_DATA).sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0));
+  return ordered.length ? ordered[0].slug : null;
+}
+
+function renderSidebarButtons() {
+  if (!lineButtonsContainer) return;
+  const ordered = Object.values(LINES_DATA).sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0));
+  if (!ordered.length) {
+    setSidebarMessage('No hay lineas disponibles.');
+    return;
+  }
+  lineButtonsContainer.innerHTML = '';
+  lineButtons = ordered.map((linea) => {
+    const btn = document.createElement('button');
+    btn.className = 'line-btn';
+    btn.dataset.line = linea.slug;
+    const chip = document.createElement('span');
+    chip.className = 'line-chip';
+    chip.textContent = linea.badge || linea.name;
+    const wrapper = document.createElement('div');
+    wrapper.className = 'line-btn-text';
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'line-name';
+    nameSpan.textContent = linea.name;
+    const subtitle = document.createElement('small');
+    subtitle.textContent = linea.subtitle || 'Servicio municipal';
+    wrapper.appendChild(nameSpan);
+    wrapper.appendChild(subtitle);
+    btn.appendChild(chip);
+    btn.appendChild(wrapper);
+    if (linea.color) {
+      btn.style.setProperty('--accent', linea.color);
+    }
+    btn.addEventListener('click', () => renderLine(linea.slug));
+    lineButtonsContainer.appendChild(btn);
+    return btn;
+  });
+}
+
+function setActiveLineButton(slug) {
+  lineButtons.forEach((btn) => btn.classList.toggle('is-active', btn.dataset.line === slug));
+}
+
+function renderLine(key) {
+  const line = LINES_DATA[key];
+  if (!line || !detailSection) return;
+
+  const accent = line.color || '#0b2447';
+  detailSection.style.setProperty('--line-color', accent);
+  if (pillEl) {
+    pillEl.textContent = line.badge || line.name;
+    pillEl.style.background = accent;
+    pillEl.style.color = '#fff';
+  }
+  if (nameEl) nameEl.textContent = line.name;
+  const subtitleText = line.subtitle || 'Servicio municipal';
+  if (descEl) descEl.textContent = subtitleText;
+  if (typeEl) typeEl.textContent = subtitleText;
+  if (infoEl) {
+    infoEl.textContent =
+      line.info ||
+      'Selecciona una linea para consultar su recorrido completo, color oficial y paradas destacadas.';
   }
 
-  buttons.forEach((btn) => {
-    btn.addEventListener('click', () => renderLine(btn.dataset.line));
-  });
+  renderStopsList(line);
+  setActiveLineButton(key);
+  pendingLineKey = key;
+  pendingColor = accent;
+  updateMiniMap(key, accent);
+  if (!line.stopDetails?.length && line.lineId) {
+    ensureStopsForLine(key).catch((err) => console.warn(`No se pudieron actualizar las paradas de ${key}:`, err));
+  }
+}
 
-  renderLine('l1-metro');
-  initMiniMap();
-});
+function renderStopsList(line) {
+  if (!stopsEl) return;
+  stopsEl.innerHTML = '';
+  const stops = line.stopDetails && line.stopDetails.length ? line.stopDetails : line.stops;
+  if (!stops || !stops.length) {
+    const li = document.createElement('li');
+    li.className = 'loading';
+    li.textContent = 'Cargando paradas...';
+    stopsEl.appendChild(li);
+    return;
+  }
+  stops.forEach((stop) => {
+    const li = document.createElement('li');
+    const label = typeof stop === 'string' ? stop : stop.nombre;
+    li.textContent = (label || '').replace(/^L\d\s/, '');
+    stopsEl.appendChild(li);
+  });
+}
+
+async function ensureStopsForLine(slug) {
+  const line = LINES_DATA[slug];
+  if (!line) return [];
+  if (line.stopDetails?.length || !line.lineId) {
+    return line.stopDetails || [];
+  }
+  if (!lineStopPromises.has(slug)) {
+    lineStopPromises.set(
+      slug,
+      (async () => {
+        const stops = await fetchStopsFromApi(line.lineId);
+        const normalizedStops = stops.map((stop, idx) => normalizeStop(stop, idx));
+        line.stopDetails = normalizedStops;
+        line.stops = normalizedStops.map((stop) => stop.nombre);
+        return normalizedStops;
+      })(),
+    );
+  }
+  const result = await lineStopPromises.get(slug);
+  if (pendingLineKey === slug) {
+    renderStopsList(line);
+    updateStopMarkers(slug);
+  }
+  return result;
+}
 
 function initMiniMap() {
   const container = document.getElementById('mini-map');
@@ -361,6 +603,7 @@ function setupMiniMapLayers() {
 
 async function updateMiniMap(key, color) {
   if (!miniMapReady) return;
+  if (miniMap) miniMap.resize();
   const geometry = await getRouteGeometry(key);
   if (!geometry) return;
 
@@ -393,15 +636,35 @@ async function getRouteGeometry(key) {
   return geometry;
 }
 
+function buildFeaturesFromLine(line) {
+  if (!line || !Array.isArray(line.stopDetails)) return [];
+  return line.stopDetails
+    .map((stop) => {
+      const lng = typeof stop.coordX === 'number' ? stop.coordX : null;
+      const lat = typeof stop.coordY === 'number' ? stop.coordY : null;
+      if (!Number.isFinite(lng) || !Number.isFinite(lat)) return null;
+      return {
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [lng, lat] },
+        properties: { name: stop.nombre || '', label: true },
+      };
+    })
+    .filter(Boolean);
+}
+
 function updateStopMarkers(key) {
-  const source = miniMap.getSource('line-stops');
+  const source = miniMap?.getSource('line-stops');
   if (!source) return;
-  const markers = LINE_MARKERS[key] || [];
-  const features = markers.map((m) => ({
-    type: 'Feature',
-    geometry: { type: 'Point', coordinates: m.coord },
-    properties: { name: m.label || '', label: Boolean(m.label) }
-  }));
+  const line = LINES_DATA[key];
+  let features = buildFeaturesFromLine(line);
+  if (!features.length) {
+    const markers = LINE_MARKERS[key] || [];
+    features = markers.map((m) => ({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: m.coord },
+      properties: { name: m.label || '', label: Boolean(m.label) },
+    }));
+  }
   source.setData({ type: 'FeatureCollection', features });
 }
 

@@ -6,8 +6,13 @@ from pydantic import BaseModel, ConfigDict
 
 
 class LineBase(BaseModel):
+    slug: str
     nomLinea: str
+    badge: str | None = None
+    subtitle: str | None = None
+    info: str | None = None
     color: str | None = None
+    orden: int = 0
 
 
 class LineCreate(LineBase):
@@ -15,8 +20,13 @@ class LineCreate(LineBase):
 
 
 class LineUpdate(BaseModel):
+    slug: str | None = None
     nomLinea: str | None = None
+    badge: str | None = None
+    subtitle: str | None = None
+    info: str | None = None
     color: str | None = None
+    orden: int | None = None
 
 
 class Line(LineBase):
@@ -30,6 +40,7 @@ class StopBase(BaseModel):
     coordX: Decimal | None = None
     coordY: Decimal | None = None
     idLinea: int
+    orden: int | None = None
 
 
 class StopCreate(StopBase):
@@ -41,6 +52,7 @@ class StopUpdate(BaseModel):
     coordX: Decimal | None = None
     coordY: Decimal | None = None
     idLinea: int | None = None
+    orden: int | None = None
 
 
 class Stop(StopBase):

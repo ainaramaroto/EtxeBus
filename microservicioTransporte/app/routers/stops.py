@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from .. import models, schemas
-from ..crud import create, delete, get_all, get_one, update
+from ..crud import create, delete, get_one, update
 from ..database import get_db
 
 router = APIRouter(prefix="/paradas", tags=["Paradas"])
@@ -23,8 +23,11 @@ def _get_stop_or_404(stop_id: int, db: Session) -> models.Stop:
 
 
 @router.get("/", response_model=list[schemas.Stop])
-def list_stops(db: Session = Depends(get_db)):
-    return get_all(db, models.Stop)
+def list_stops(line_id: int | None = None, db: Session = Depends(get_db)):
+    query = db.query(models.Stop)
+    if line_id is not None:
+        query = query.filter(models.Stop.idLinea == line_id)
+    return query.order_by(models.Stop.orden, models.Stop.idParada).all()
 
 
 @router.get("/{stop_id}", response_model=schemas.Stop)
