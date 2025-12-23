@@ -197,6 +197,7 @@ body {
   overflow-y: auto;
   scrollbar-gutter: stable both-edges;
   scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--line-color, #0f5f97) 30%, #dfe6f3) transparent;
   -ms-overflow-style: auto;
 }
 
@@ -208,9 +209,21 @@ body {
   background: transparent;
 }
 
+.schedule-card::-webkit-scrollbar-button,
+.schedule-card::-webkit-scrollbar-button:start,
+.schedule-card::-webkit-scrollbar-button:end,
+.schedule-card::-webkit-scrollbar-button:single-button {
+  width: 0;
+  height: 0;
+  background: transparent;
+  border: none;
+  display: none !important;
+}
+
 .schedule-card::-webkit-scrollbar-thumb {
   background: color-mix(in srgb, var(--line-color, #0f5f97) 25%, #dfe6f3);
   border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.65);
 }
 
 .schedule-card.linea1 {
