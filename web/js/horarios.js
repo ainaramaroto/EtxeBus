@@ -10,6 +10,36 @@ function formatSlot(slot) {
   return slot.start;
 }
 
+function normalizeLabel(text = '') {
+  return text
+    .toString()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
+function classifyBlock(block = {}) {
+  const descriptor = normalizeLabel(`${block.title || ''} ${block.subtitle || ''}`);
+  if (/(festiv|fin\s*de\s*sem|finde|weekend)/.test(descriptor)) {
+    return 'weekend';
+  }
+  if (/(labor|labur|lectiv)/.test(descriptor)) {
+    return 'workdays';
+  }
+  return 'other';
+}
+
+function groupBlocks(blocks = []) {
+  return blocks.reduce(
+    (acc, block) => {
+      const bucket = classifyBlock(block);
+      acc[bucket].push(block);
+      return acc;
+    },
+    { workdays: [], weekend: [], other: [] }
+  );
+}
+
 function buildTable(columns = []) {
   if (!columns.length) return null;
   const table = document.createElement('table');
@@ -62,17 +92,24 @@ function createBlock(block) {
   const section = document.createElement('div');
   section.className = 'schedule-section';
 
-  if (block.title) {
-    const heading = document.createElement('h4');
-    heading.textContent = block.title;
-    section.appendChild(heading);
-  }
+  if (block.title || block.subtitle) {
+    const header = document.createElement('div');
+    header.className = 'section-header';
 
-  if (block.subtitle) {
-    const subtitle = document.createElement('p');
-    subtitle.className = 'block-subtitle';
-    subtitle.textContent = block.subtitle;
-    section.appendChild(subtitle);
+    if (block.title) {
+      const heading = document.createElement('h4');
+      heading.textContent = block.title;
+      header.appendChild(heading);
+    }
+
+    if (block.subtitle) {
+      const subtitle = document.createElement('span');
+      subtitle.className = 'block-subtitle';
+      subtitle.textContent = block.subtitle;
+      header.appendChild(subtitle);
+    }
+
+    section.appendChild(header);
   }
 
   const table = buildTable(block.columns || []);
@@ -98,12 +135,9 @@ function createCard(card) {
 
   const badge = document.createElement('div');
   badge.className = 'badge';
-  badge.textContent = card.line_badge || card.line_code;
+  const baseLabel = card.line_badge || card.line_code || '';
+  badge.textContent = card.service_name ? `${baseLabel} - ${card.service_name}` : baseLabel;
   article.appendChild(badge);
-
-  const heading = document.createElement('h3');
-  heading.textContent = card.service_name;
-  article.appendChild(heading);
 
   if (card.description) {
     const description = document.createElement('p');
@@ -112,9 +146,70 @@ function createCard(card) {
     article.appendChild(description);
   }
 
-  (card.blocks || []).forEach((block) => {
-    article.appendChild(createBlock(block));
+  const blocks = Array.isArray(card.blocks) ? card.blocks : [];
+  const grouped = groupBlocks(blocks);
+  if (grouped.other.length) {
+    grouped.weekend.push(...grouped.other);
+    grouped.other = [];
+  }
+
+  const toggleOptions = [
+    { key: 'workdays', label: 'Laborales' },
+    { key: 'weekend', label: 'Festivos' },
+  ];
+
+  const preferredOrder = ['workdays', 'weekend'];
+  let activeKey = preferredOrder.find((key) => grouped[key].length) || toggleOptions[0].key;
+
+  const toggle = document.createElement('div');
+  toggle.className = 'schedule-toggle';
+  const buttons = [];
+
+  toggleOptions.forEach(({ key, label }) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = label;
+    button.dataset.key = key;
+    if (key === activeKey) button.classList.add('is-active');
+    button.addEventListener('click', () => {
+      if (activeKey === key) return;
+      activeKey = key;
+      buttons.forEach((btn) => {
+        btn.classList.toggle('is-active', btn.dataset.key === activeKey);
+      });
+      renderActiveGroup();
+    });
+    buttons.push(button);
+    toggle.appendChild(button);
   });
+
+  const contentWrapper = document.createElement('div');
+  contentWrapper.className = 'blocks-container';
+
+  article.appendChild(toggle);
+  article.appendChild(contentWrapper);
+
+  function renderActiveGroup() {
+    const list = grouped[activeKey] || [];
+    contentWrapper.innerHTML = '';
+
+    if (!list.length) {
+      const empty = document.createElement('p');
+      empty.className = 'notes';
+      empty.textContent =
+        activeKey === 'weekend'
+          ? 'No hay horarios publicados para festivos o fines de semana.'
+          : 'No hay horarios publicados para dias laborables.';
+      contentWrapper.appendChild(empty);
+      return;
+    }
+
+    list.forEach((block) => {
+      contentWrapper.appendChild(createBlock(block));
+    });
+  }
+
+  renderActiveGroup();
 
   return article;
 }
