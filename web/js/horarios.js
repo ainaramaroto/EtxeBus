@@ -1,14 +1,7 @@
-const API_BASE_URL = window.ETXEBUS_API_BASE || 'http://localhost:4000/api';
+﻿const API_BASE_URL = window.ETXEBUS_API_BASE || 'http://localhost:4000/api';
 
 const statusEl = document.getElementById('schedule-status');
 const gridEl = document.getElementById('schedule-grid');
-
-function formatSlot(slot) {
-  if (!slot) return '—';
-  if (slot.start === '—') return '—';
-  if (slot.end) return `${slot.start} → ${slot.end}`;
-  return slot.start;
-}
 
 function normalizeLabel(text = '') {
   return text
@@ -40,52 +33,87 @@ function groupBlocks(blocks = []) {
   );
 }
 
-function buildTable(columns = []) {
-  if (!columns.length) return null;
-  const table = document.createElement('table');
-  table.className = 'schedule-table';
-
-  const thead = document.createElement('thead');
-  const headerRow = document.createElement('tr');
-  columns.forEach((column) => {
-    const th = document.createElement('th');
-    th.textContent = column.label;
-    headerRow.appendChild(th);
-  });
-  thead.appendChild(headerRow);
-  table.appendChild(thead);
-
-  const tbody = document.createElement('tbody');
-  const maxRows = Math.max(...columns.map((c) => c.items.length));
-  for (let rowIndex = 0; rowIndex < maxRows; rowIndex += 1) {
-    const tr = document.createElement('tr');
-    columns.forEach((column) => {
-      const td = document.createElement('td');
-      const slot = column.items[rowIndex];
-      if (slot) {
-        const text = formatSlot(slot);
-        if (slot.highlight) {
-          const strong = document.createElement('strong');
-          strong.textContent = text;
-          td.appendChild(strong);
-        } else {
-          td.textContent = text;
-        }
-        if (slot.note) {
-          const small = document.createElement('small');
-          small.textContent = slot.note;
-          td.appendChild(document.createElement('br'));
-          td.appendChild(small);
-        }
-      } else {
-        td.textContent = '—';
-      }
-      tr.appendChild(td);
+function groupSlotsByHour(items = []) {
+  const buckets = new Map();
+  items.forEach((slot) => {
+    if (!slot || !slot.start) return;
+    const [hour, minute] = slot.start.split(':');
+    if (!hour || typeof minute === 'undefined') return;
+    const entry = buckets.get(hour) || [];
+    entry.push({
+      minute,
+      highlight: Boolean(slot.highlight),
+      note: slot.note || null,
     });
-    tbody.appendChild(tr);
+    buckets.set(hour, entry);
+  });
+
+  return Array.from(buckets.entries())
+    .map(([hour, minutes]) => ({
+      hour,
+      minutes: minutes.sort((a, b) => Number(a.minute) - Number(b.minute)),
+    }))
+    .sort((a, b) => Number(a.hour) - Number(b.hour));
+}
+
+function renderColumn(column = {}) {
+  const columnEl = document.createElement('div');
+  columnEl.className = 'schedule-column';
+
+  if (column.label) {
+    const label = document.createElement('p');
+    label.className = 'column-label';
+    label.textContent = column.label;
+    columnEl.appendChild(label);
   }
-  table.appendChild(tbody);
-  return table;
+
+  const groupedSlots = groupSlotsByHour(column.items || []);
+  if (!groupedSlots.length) {
+    const empty = document.createElement('p');
+    empty.className = 'notes';
+    empty.textContent = 'Sin horarios publicados.';
+    columnEl.appendChild(empty);
+    return columnEl;
+  }
+
+  const grid = document.createElement('div');
+  grid.className = 'hour-grid';
+
+  groupedSlots.forEach(({ hour, minutes }) => {
+    const cell = document.createElement('div');
+    cell.className = 'hour-cell';
+
+    const hourLabel = document.createElement('div');
+    hourLabel.className = 'hour-label';
+    hourLabel.textContent = `${hour}h`;
+    cell.appendChild(hourLabel);
+
+    const minuteList = document.createElement('div');
+    minuteList.className = 'minute-list';
+
+    minutes.forEach(({ minute, highlight, note }) => {
+      const minuteTag = document.createElement('span');
+      minuteTag.className = 'minute-pill';
+      if (highlight) minuteTag.classList.add('is-highlight');
+      minuteTag.textContent = minute;
+      if (note) minuteTag.title = note;
+      minuteList.appendChild(minuteTag);
+    });
+
+    cell.appendChild(minuteList);
+    grid.appendChild(cell);
+  });
+
+  columnEl.appendChild(grid);
+
+  if (column.note) {
+    const columnNote = document.createElement('p');
+    columnNote.className = 'column-note';
+    columnNote.textContent = column.note;
+    columnEl.appendChild(columnNote);
+  }
+
+  return columnEl;
 }
 
 function createBlock(block) {
@@ -112,8 +140,15 @@ function createBlock(block) {
     section.appendChild(header);
   }
 
-  const table = buildTable(block.columns || []);
-  if (table) section.appendChild(table);
+  const columns = Array.isArray(block.columns) ? block.columns : [];
+  if (columns.length) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'columns-grid';
+    columns.forEach((column) => {
+      wrapper.appendChild(renderColumn(column));
+    });
+    section.appendChild(wrapper);
+  }
 
   if (block.note) {
     const note = document.createElement('p');

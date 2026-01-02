@@ -104,9 +104,10 @@ class RouteStop(RouteStopBase):
 
 
 class ScheduleBase(BaseModel):
-    hora: float
+    hora: str
     idLinea: int
     idParada: int
+    tipoDia: str = "LECTIVO"
 
 
 class ScheduleCreate(ScheduleBase):
@@ -114,9 +115,10 @@ class ScheduleCreate(ScheduleBase):
 
 
 class ScheduleUpdate(BaseModel):
-    hora: float | None = None
+    hora: str | None = None
     idLinea: int | None = None
     idParada: int | None = None
+    tipoDia: str | None = None
 
 
 class Schedule(ScheduleBase):
@@ -155,5 +157,6 @@ class PublishedSchedule(BaseModel):
     description: str | None = None
     orden: int
     blocks: list[ScheduleBlock]
+    line_id: int | None = None
 
     model_config = ConfigDict(from_attributes=True)

@@ -78,9 +78,10 @@ class Schedule(Base):
     __tablename__ = "horario"
 
     idHorario: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    hora: Mapped[float] = mapped_column(Float(2))
+    hora: Mapped[str] = mapped_column(String(5))
     idLinea: Mapped[int] = mapped_column(ForeignKey("linea.idLinea"))
     idParada: Mapped[int] = mapped_column(ForeignKey("parada.idParada"))
+    tipoDia: Mapped[str] = mapped_column(String(20), default="LECTIVO")
 
     linea: Mapped["Line"] = relationship(back_populates="horarios")
     parada: Mapped["Stop"] = relationship(back_populates="horarios")
@@ -99,3 +100,6 @@ class ScheduleCard(Base):
     description: Mapped[str | None] = mapped_column(String(200), nullable=True)
     blocks: Mapped[list[dict]] = mapped_column(JSON)
     orden: Mapped[int] = mapped_column(default=0)
+    idLinea: Mapped[int | None] = mapped_column(ForeignKey("linea.idLinea"), nullable=True)
+
+    linea: Mapped["Line"] = relationship()

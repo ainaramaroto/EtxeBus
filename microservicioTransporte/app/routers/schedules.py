@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections import defaultdict
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -8,6 +10,27 @@ from ..crud import create, delete, get_all, get_one, update
 from ..database import get_db
 
 router = APIRouter(prefix="/horarios", tags=["Horarios"])
+
+
+def _format_hour_value(value: str) -> str:
+    raw = value.strip()
+    if ":" not in raw:
+        return raw
+    hours, minutes = raw.split(":")
+    return f"{int(hours):02d}:{int(minutes):02d}"
+
+
+def _build_schedule_map(db: Session, line_id: int) -> dict[str, list[dict]]:
+    records = (
+        db.query(models.Schedule.tipoDia, models.Schedule.hora)
+        .filter(models.Schedule.idLinea == line_id)
+        .order_by(models.Schedule.hora)
+        .all()
+    )
+    mapping: dict[str, list[dict]] = defaultdict(list)
+    for tipo, hour in records:
+        mapping[tipo.upper()].append({"start": _format_hour_value(hour)})
+    return mapping
 
 
 def _ensure_line(db: Session, line_id: int) -> None:
@@ -43,11 +66,47 @@ def list_schedules(
 
 @router.get("/publicados", response_model=list[schemas.PublishedSchedule])
 def list_published_schedules(db: Session = Depends(get_db)):
-    return (
+    cards = (
         db.query(models.ScheduleCard)
         .order_by(models.ScheduleCard.orden, models.ScheduleCard.id)
         .all()
     )
+
+    enriched: list[schemas.PublishedSchedule] = []
+    for card in cards:
+        schedule_map = _build_schedule_map(db, card.idLinea) if card.idLinea else {}
+        new_blocks: list[schemas.ScheduleBlock] = []
+        for block in card.blocks or []:
+            new_columns = []
+            for column in block.get("columns", []):
+                column_copy = {k: v for k, v in column.items() if k not in {"items", "day_type"}}
+                day_type = column.get("day_type")
+                if day_type and schedule_map:
+                    items = [item.copy() for item in schedule_map.get(day_type.upper(), [])]
+                else:
+                    items = column.get("items", [])
+                column_copy["items"] = items
+                new_columns.append(column_copy)
+            block_copy = dict(block)
+            block_copy["columns"] = new_columns
+            new_blocks.append(schemas.ScheduleBlock.model_validate(block_copy))
+
+        enriched.append(
+            schemas.PublishedSchedule(
+                slug=card.slug,
+                line_code=card.line_code,
+                line_name=card.line_name,
+                line_badge=card.line_badge,
+                line_color=card.line_color,
+                service_name=card.service_name,
+                description=card.description,
+                orden=card.orden,
+                blocks=new_blocks,
+                line_id=card.idLinea,
+            )
+        )
+
+    return enriched
 
 
 @router.get("/{schedule_id}", response_model=schemas.Schedule)

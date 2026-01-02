@@ -372,6 +372,87 @@ body {
   margin-top: 0.25rem;
 }
 
+.columns-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.schedule-column {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.85rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid color-mix(in srgb, var(--line-color, #0f5f97) 20%, #e2e9f6);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+}
+
+.column-label {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--line-color, #0f5f97);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.column-note {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--muted-color);
+}
+
+.hour-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  gap: 0.5rem;
+}
+
+.hour-cell {
+  border-radius: 12px;
+  padding: 0.45rem 0.35rem 0.6rem;
+  background: color-mix(in srgb, var(--line-color, #0f5f97) 10%, #f7f9ff);
+  border: 1px solid color-mix(in srgb, var(--line-color, #0f5f97) 20%, #dae3f3);
+  text-align: center;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+}
+
+.hour-label {
+  margin: 0 0 0.35rem;
+  font-weight: 700;
+  color: var(--line-color, #0f5f97);
+}
+
+.minute-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.3rem;
+}
+
+.minute-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.3rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid var(--border-color);
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-color);
+}
+
+.minute-pill.is-highlight {
+  background: color-mix(in srgb, var(--line-color, #0f5f97) 20%, #fff);
+  color: var(--line-color, #0f5f97);
+  border-color: currentColor;
+}
+
 .schedule-table td strong {
   color: var(--line-color, #0f5f97);
 }
