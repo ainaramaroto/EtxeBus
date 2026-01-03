@@ -34,6 +34,21 @@ CARD_STOP_NAME_HINTS = {
     "l2-poligono-boquete": "L2 Metro Etxebarri",
 }
 
+LINE_ID_METRO = 1
+LINE_ID_SANTAMARINA = 2
+LINE_ID_LABUR = 3
+LINE_ID_LUZE = 4
+
+STOP_METRO_LINE1 = 1
+STOP_SANTAMARINA = 10
+STOP_LABUR_METRO = 18
+STOP_LUZE_METRO = 28
+
+L1_METRO_LECTIVO_OVERRIDES = {
+    "remove": {"07:15", "08:05"},
+    "add": {"07:10", "07:20", "07:45", "08:10"},
+}
+
 
 class ExternalScheduleError(RuntimeError):
     """Raised when the horarios oficiales no se pueden obtener."""
@@ -366,6 +381,117 @@ def _build_schedule_payloads(
     return payloads
 
 
+def _fetch_schedule_hours(
+    db: Session, line_id: int | None, stop_id: int | None, tipo_dia: str
+) -> list[str]:
+    if line_id is None or stop_id is None:
+        return []
+    record = (
+        db.query(models.Schedule)
+        .filter(
+            models.Schedule.idLinea == line_id,
+            models.Schedule.idParada == stop_id,
+            models.Schedule.tipoDia == tipo_dia.upper(),
+        )
+        .first()
+    )
+    return list(record.horas or []) if record else []
+
+
+def _hours_to_items(hours: list[str], highlight: set[str] | None = None) -> list[dict[str, str | bool]]:
+    highlight = highlight or set()
+    return [{"start": hour, "highlight": hour in highlight} for hour in hours]
+
+
+def _apply_hour_overrides(hours: list[str], overrides: dict[str, set[str]] | None) -> list[str]:
+    if not overrides:
+        return sorted(hours)
+    bucket = set(hours)
+    for value in overrides.get("remove", set()):
+        bucket.discard(value)
+    for value in overrides.get("add", set()):
+        bucket.add(value)
+    return sorted(bucket)
+
+
+def _build_l1_custom_blocks(db: Session) -> list[dict] | None:
+    workday_columns: list[dict] = []
+    weekend_columns: list[dict] = []
+
+    for label, line_id, stop_id in (
+        ("Salida Metro", LINE_ID_METRO, STOP_METRO_LINE1),
+        ("Salida Santa Marina", LINE_ID_SANTAMARINA, STOP_SANTAMARINA),
+    ):
+        work_hours = _fetch_schedule_hours(db, line_id, stop_id, "LECTIVO")
+        if line_id == LINE_ID_METRO and stop_id == STOP_METRO_LINE1:
+            work_hours = _apply_hour_overrides(work_hours, L1_METRO_LECTIVO_OVERRIDES)
+        workday_columns.append(
+            {
+                "label": label,
+                "items": _hours_to_items(work_hours),
+            }
+        )
+        weekend_columns.append(
+            {
+                "label": label,
+                "items": _hours_to_items(
+                    _fetch_schedule_hours(db, line_id, stop_id, "FESTIVO")
+                ),
+            }
+        )
+
+    valid_blocks = any(column["items"] for column in workday_columns + weekend_columns)
+    if not valid_blocks:
+        return None
+
+    return [
+        {
+            "title": "Laborables",
+            "columns": workday_columns,
+        },
+        {
+            "title": "Festivos",
+            "columns": weekend_columns,
+        },
+    ]
+
+
+def _build_l2_custom_blocks(db: Session) -> list[dict] | None:
+    luze_hours = _fetch_schedule_hours(db, LINE_ID_LUZE, STOP_LUZE_METRO, "LECTIVO")
+    labur_hours = set(_fetch_schedule_hours(db, LINE_ID_LABUR, STOP_LABUR_METRO, "LECTIVO"))
+
+    if not luze_hours:
+        return None
+
+    note = "* Los horarios resaltados en verde son de la Linea 2 - Labur"
+    return [
+        {
+            "title": "Laborables",
+            "columns": [
+                {
+                    "label": "Servicio Luze (Metro -> Boquete)",
+                    "items": _hours_to_items(luze_hours, highlight=labur_hours),
+                }
+            ],
+            "note": note,
+        }
+    ]
+
+
+def _apply_custom_layouts(db: Session, blocks: dict[str, list[dict]]) -> dict[str, list[dict]]:
+    customized = dict(blocks)
+
+    l1_custom = _build_l1_custom_blocks(db)
+    if l1_custom:
+        customized["l1-santa-marina"] = l1_custom
+
+    l2_custom = _build_l2_custom_blocks(db)
+    if l2_custom:
+        customized["l2-poligono-boquete"] = l2_custom
+
+    return customized
+
+
 def _derive_schedule_times_from_blocks(blocks: dict[str, list[dict]]) -> dict[str, dict[str, list[str]]]:
     derived: dict[str, dict[str, set[str]]] = {}
     for slug, card_blocks in blocks.items():
@@ -443,7 +569,7 @@ def get_external_card_blocks(db: Session) -> dict[str, list[dict]]:
     if cached and now < cached[0]:
         _, cached_blocks, cached_times = cached
         _sync_schedule_records(db, cached_times)
-        return cached_blocks
+        return _apply_custom_layouts(db, cached_blocks)
 
     try:
         content = _download_pdf()
@@ -458,11 +584,12 @@ def get_external_card_blocks(db: Session) -> dict[str, list[dict]]:
                 _sync_schedule_records(db, derived_times)
             else:
                 LOGGER.warning("No se pudieron derivar horas desde las instantaneas guardadas")
-            return snapshots
+            return _apply_custom_layouts(db, snapshots)
         raise
 
     _persist_snapshots(db, blocks)
     _sync_schedule_records(db, schedule_times)
+    final_blocks = _apply_custom_layouts(db, blocks)
     _CACHE["blocks"] = (now + CACHE_TTL_SECONDS, blocks, schedule_times)
     LOGGER.info("Horarios oficiales actualizados desde %s", SCHEDULE_PDF_URL)
-    return blocks
+    return final_blocks

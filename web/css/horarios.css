@@ -448,9 +448,11 @@ body {
 }
 
 .minute-pill.is-highlight {
-  background: color-mix(in srgb, var(--line-color, #0f5f97) 20%, #fff);
-  color: var(--line-color, #0f5f97);
-  border-color: currentColor;
+  background: color-mix(in srgb, var(--line-color, #0f5f97) 65%, #f3fff6);
+  color: #ffffff;
+  border-color: color-mix(in srgb, var(--line-color, #0f5f97) 85%, #c8ffd6);
+  font-weight: 800;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.25);
 }
 
 .schedule-table td strong {

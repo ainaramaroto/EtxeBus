@@ -193,35 +193,42 @@ function createCard(card) {
     { key: 'weekend', label: 'Festivos' },
   ];
 
-  const preferredOrder = ['workdays', 'weekend'];
-  let activeKey = preferredOrder.find((key) => grouped[key].length) || toggleOptions[0].key;
+  const availableOptions = toggleOptions.filter(({ key }) => (grouped[key] || []).length);
+  if (!availableOptions.length) {
+    availableOptions.push(toggleOptions[0]);
+  }
 
-  const toggle = document.createElement('div');
-  toggle.className = 'schedule-toggle';
-  const buttons = [];
-
-  toggleOptions.forEach(({ key, label }) => {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.textContent = label;
-    button.dataset.key = key;
-    if (key === activeKey) button.classList.add('is-active');
-    button.addEventListener('click', () => {
-      if (activeKey === key) return;
-      activeKey = key;
-      buttons.forEach((btn) => {
-        btn.classList.toggle('is-active', btn.dataset.key === activeKey);
-      });
-      renderActiveGroup();
-    });
-    buttons.push(button);
-    toggle.appendChild(button);
-  });
+  let activeKey = availableOptions[0].key;
 
   const contentWrapper = document.createElement('div');
   contentWrapper.className = 'blocks-container';
 
-  article.appendChild(toggle);
+  if (availableOptions.length > 1) {
+    const toggle = document.createElement('div');
+    toggle.className = 'schedule-toggle';
+    const buttons = [];
+
+    availableOptions.forEach(({ key, label }) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = label;
+      button.dataset.key = key;
+      if (key === activeKey) button.classList.add('is-active');
+      button.addEventListener('click', () => {
+        if (activeKey === key) return;
+        activeKey = key;
+        buttons.forEach((btn) => {
+          btn.classList.toggle('is-active', btn.dataset.key === activeKey);
+        });
+        renderActiveGroup();
+      });
+      buttons.push(button);
+      toggle.appendChild(button);
+    });
+
+    article.appendChild(toggle);
+  }
+
   article.appendChild(contentWrapper);
 
   function renderActiveGroup() {
