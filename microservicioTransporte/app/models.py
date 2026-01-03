@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from decimal import Decimal
+from datetime import datetime
 
-from sqlalchemy import Float, ForeignKey, JSON, Numeric, String, UniqueConstraint
+from sqlalchemy import DateTime, Float, ForeignKey, JSON, Numeric, String, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .database import Base
@@ -25,11 +26,6 @@ class Line(Base):
         cascade="all, delete-orphan",
         order_by="Stop.orden",
     )
-    horarios: Mapped[list["Schedule"]] = relationship(
-        back_populates="linea",
-        cascade="all, delete-orphan",
-    )
-
 
 class Stop(Base):
     __tablename__ = "parada"
@@ -42,7 +38,6 @@ class Stop(Base):
     orden: Mapped[int | None] = mapped_column(nullable=True)
 
     linea: Mapped["Line"] = relationship(back_populates="paradas")
-    horarios: Mapped[list["Schedule"]] = relationship(back_populates="parada")
     trayectos_relacionados: Mapped[list["RouteStop"]] = relationship(back_populates="parada")
 
 
@@ -78,13 +73,10 @@ class Schedule(Base):
     __tablename__ = "horario"
 
     idHorario: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    hora: Mapped[str] = mapped_column(String(5))
-    idLinea: Mapped[int] = mapped_column(ForeignKey("linea.idLinea"))
-    idParada: Mapped[int] = mapped_column(ForeignKey("parada.idParada"))
-    tipoDia: Mapped[str] = mapped_column(String(20), default="LECTIVO")
-
-    linea: Mapped["Line"] = relationship(back_populates="horarios")
-    parada: Mapped["Stop"] = relationship(back_populates="horarios")
+    idLinea: Mapped[int | None] = mapped_column(ForeignKey("linea.idLinea"), nullable=True)
+    idParada: Mapped[int | None] = mapped_column(ForeignKey("parada.idParada"), nullable=True)
+    tipoDia: Mapped[str] = mapped_column(String(20))
+    horas: Mapped[list[str]] = mapped_column(JSON, default=list)
 
 
 class ScheduleCard(Base):
@@ -103,3 +95,11 @@ class ScheduleCard(Base):
     idLinea: Mapped[int | None] = mapped_column(ForeignKey("linea.idLinea"), nullable=True)
 
     linea: Mapped["Line"] = relationship()
+
+
+class ExternalScheduleSnapshot(Base):
+    __tablename__ = "horario_snapshot"
+
+    slug: Mapped[str] = mapped_column(String(64), primary_key=True)
+    payload: Mapped[list[dict]] = mapped_column(JSON)
+    fetched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

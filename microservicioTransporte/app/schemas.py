@@ -104,21 +104,22 @@ class RouteStop(RouteStopBase):
 
 
 class ScheduleBase(BaseModel):
-    hora: str
-    idLinea: int
-    idParada: int
-    tipoDia: str = "LECTIVO"
+    tipoDia: str
+    horas: list[str]
+    idLinea: int | None = None
+    idParada: int | None = None
 
 
 class ScheduleCreate(ScheduleBase):
-    pass
+    idLinea: int | None = None
+    idParada: int | None = None
 
 
 class ScheduleUpdate(BaseModel):
-    hora: str | None = None
+    tipoDia: str | None = None
+    horas: list[str] | None = None
     idLinea: int | None = None
     idParada: int | None = None
-    tipoDia: str | None = None
 
 
 class Schedule(ScheduleBase):

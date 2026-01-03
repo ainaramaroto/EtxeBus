@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 from decimal import Decimal
+import logging
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from . import models
+from .services.external_schedule import ExternalScheduleError, get_external_card_blocks
+
+LOGGER = logging.getLogger(__name__)
 
 
 def _coord(lng: float, lat: float) -> tuple[Decimal, Decimal]:
@@ -361,6 +365,7 @@ DEFAULT_SCHEDULE_CARDS = [
         "line_color": "#1B8F3A",
         "service_name": "Servicio Luze y Labur",
         "description": "Recorridos hacia poligono industrial y barrio del Boquete.",
+        "line_id": 4,
         "blocks": [
             {
                 "title": "Laborables",
@@ -536,23 +541,7 @@ def seed_schedule_cards(session: Session) -> None:
 
 
 def seed_schedules(session: Session) -> None:
-    for payload in SCHEDULE_DATA:
-        session.query(models.Schedule).filter(
-            models.Schedule.idLinea == payload["idLinea"],
-            models.Schedule.idParada == payload["idParada"],
-            models.Schedule.tipoDia == payload["tipoDia"],
-        ).delete(synchronize_session=False)
-
-        for time_str in payload["times"]:
-            session.add(
-                models.Schedule(
-                    hora=_normalize_time_string(time_str),
-                    idLinea=payload["idLinea"],
-                    idParada=payload["idParada"],
-                    tipoDia=payload["tipoDia"],
-                )
-            )
-
+    session.execute(text('TRUNCATE "horario"'))
     session.commit()
 
 
@@ -560,39 +549,62 @@ def ensure_schedule_schema(session: Session) -> None:
     session.execute(
         text(
             """
-            DO $$
-            BEGIN
-                IF EXISTS (
-                    SELECT 1
-                    FROM information_schema.columns
-                    WHERE table_name = 'horario'
-                      AND column_name = 'hora'
-                      AND data_type <> 'character varying'
-                ) THEN
-                    ALTER TABLE "horario"
-                    ALTER COLUMN "hora" TYPE VARCHAR(5)
-                    USING LPAD(FLOOR("hora")::text, 2, '0') || ':' ||
-                          LPAD(ROUND(("hora" - FLOOR("hora")) * 60)::text, 2, '0');
-                END IF;
-            END
-            $$;
+            CREATE TABLE IF NOT EXISTS "horario" (
+                "idHorario" SERIAL PRIMARY KEY
+            );
             """
+        )
+    )
+    session.execute(text('ALTER TABLE "horario" DROP COLUMN IF EXISTS "hora"'))
+    session.execute(
+        text(
+            'ALTER TABLE "horario" '
+            'ADD COLUMN IF NOT EXISTS "tipoDia" VARCHAR(20)'
+        )
+    )
+    session.execute(text('ALTER TABLE "horario" DROP COLUMN IF EXISTS "horas"'))
+    session.execute(
+        text(
+            'ALTER TABLE "horario" '
+            'ADD COLUMN IF NOT EXISTS "horas" JSONB NOT NULL DEFAULT \'[]\'::jsonb'
+        )
+    )
+    session.execute(text('ALTER TABLE "horario" DROP CONSTRAINT IF EXISTS "horario_tipoDia_key"'))
+    session.execute(
+        text(
+            'ALTER TABLE "horario" '
+            'ADD COLUMN IF NOT EXISTS "idLinea" INTEGER REFERENCES "linea"("idLinea")'
         )
     )
     session.execute(
         text(
             'ALTER TABLE "horario" '
-            'ADD COLUMN IF NOT EXISTS "tipoDia" VARCHAR(20) DEFAULT \'LECTIVO\''
+            'ADD COLUMN IF NOT EXISTS "idParada" INTEGER REFERENCES "parada"("idParada")'
         )
     )
     session.execute(
-        text('UPDATE "horario" SET "tipoDia" = COALESCE("tipoDia", \'LECTIVO\')')
+        text('ALTER TABLE "horario" ALTER COLUMN "tipoDia" SET NOT NULL')
+    )
+    session.execute(
+        text('DROP INDEX IF EXISTS uq_horario_tipodia')
+    )
+    session.execute(
+        text(
+            'CREATE UNIQUE INDEX IF NOT EXISTS uq_horario_linea_parada_tipodia '
+            'ON "horario" (COALESCE("idLinea", -1), COALESCE("idParada", -1), UPPER("tipoDia"))'
+        )
     )
     session.execute(
         text(
             'ALTER TABLE "horario_card" '
             'ADD COLUMN IF NOT EXISTS "idLinea" INTEGER NULL'
         )
+    )
+    session.execute(
+        text('UPDATE "horario" SET "idLinea" = COALESCE("idLinea", 1)')
+    )
+    session.execute(
+        text('UPDATE "horario" SET "idParada" = COALESCE("idParada", 1)')
     )
     session.commit()
 
@@ -604,5 +616,9 @@ def seed_initial_data(session_factory) -> None:
         seed_lines_and_stops(session)
         seed_schedules(session)
         seed_schedule_cards(session)
+        try:
+            get_external_card_blocks(session)
+        except ExternalScheduleError as exc:
+            LOGGER.warning("No se pudieron sincronizar los horarios oficiales durante el seed: %s", exc)
     finally:
         session.close()

@@ -1,46 +1,33 @@
 from __future__ import annotations
 
-from collections import defaultdict
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from .. import models, schemas
-from ..crud import create, delete, get_all, get_one, update
+from ..crud import create, delete, get_one, update
 from ..database import get_db
+from ..services.external_schedule import (
+    ExternalScheduleError,
+    get_external_card_blocks,
+)
 
 router = APIRouter(prefix="/horarios", tags=["Horarios"])
+LOGGER = logging.getLogger(__name__)
 
 
 def _format_hour_value(value: str) -> str:
     raw = value.strip()
     if ":" not in raw:
         return raw
-    hours, minutes = raw.split(":")
+    hours, minutes = raw.split(":", 1)
     return f"{int(hours):02d}:{int(minutes):02d}"
 
 
-def _build_schedule_map(db: Session, line_id: int) -> dict[str, list[dict]]:
-    records = (
-        db.query(models.Schedule.tipoDia, models.Schedule.hora)
-        .filter(models.Schedule.idLinea == line_id)
-        .order_by(models.Schedule.hora)
-        .all()
-    )
-    mapping: dict[str, list[dict]] = defaultdict(list)
-    for tipo, hour in records:
-        mapping[tipo.upper()].append({"start": _format_hour_value(hour)})
-    return mapping
-
-
-def _ensure_line(db: Session, line_id: int) -> None:
-    if not get_one(db, models.Line, line_id):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="La linea indicada no existe")
-
-
-def _ensure_stop(db: Session, stop_id: int) -> None:
-    if not get_one(db, models.Stop, stop_id):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="La parada indicada no existe")
+def _normalize_hours_list(hours: list[str]) -> list[str]:
+    sanitized = {_format_hour_value(hour) for hour in hours if hour}
+    return sorted(sanitized)
 
 
 def _get_schedule_or_404(schedule_id: int, db: Session) -> models.Schedule:
@@ -52,16 +39,13 @@ def _get_schedule_or_404(schedule_id: int, db: Session) -> models.Schedule:
 
 @router.get("/", response_model=list[schemas.Schedule])
 def list_schedules(
-    line_id: int | None = None,
-    stop_id: int | None = None,
+    tipo_dia: str | None = None,
     db: Session = Depends(get_db),
 ):
     query = db.query(models.Schedule)
-    if line_id is not None:
-        query = query.filter(models.Schedule.idLinea == line_id)
-    if stop_id is not None:
-        query = query.filter(models.Schedule.idParada == stop_id)
-    return query.all()
+    if tipo_dia is not None:
+        query = query.filter(models.Schedule.tipoDia == tipo_dia.upper())
+    return query.order_by(models.Schedule.tipoDia).all()
 
 
 @router.get("/publicados", response_model=list[schemas.PublishedSchedule])
@@ -72,24 +56,29 @@ def list_published_schedules(db: Session = Depends(get_db)):
         .all()
     )
 
+    try:
+        external_blocks = get_external_card_blocks(db)
+    except ExternalScheduleError as exc:
+        LOGGER.warning("No se pudieron cargar los horarios oficiales ni recuperar copias: %s", exc)
+        external_blocks = {}
+
     enriched: list[schemas.PublishedSchedule] = []
     for card in cards:
-        schedule_map = _build_schedule_map(db, card.idLinea) if card.idLinea else {}
         new_blocks: list[schemas.ScheduleBlock] = []
-        for block in card.blocks or []:
-            new_columns = []
-            for column in block.get("columns", []):
-                column_copy = {k: v for k, v in column.items() if k not in {"items", "day_type"}}
-                day_type = column.get("day_type")
-                if day_type and schedule_map:
-                    items = [item.copy() for item in schedule_map.get(day_type.upper(), [])]
-                else:
-                    items = column.get("items", [])
-                column_copy["items"] = items
-                new_columns.append(column_copy)
-            block_copy = dict(block)
-            block_copy["columns"] = new_columns
-            new_blocks.append(schemas.ScheduleBlock.model_validate(block_copy))
+
+        if external_blocks.get(card.slug):
+            for block in external_blocks[card.slug]:
+                new_blocks.append(schemas.ScheduleBlock.model_validate(block))
+        else:
+            for block in card.blocks or []:
+                new_columns = []
+                for column in block.get("columns", []):
+                    column_copy = dict(column)
+                    column_copy["items"] = column.get("items", [])
+                    new_columns.append(column_copy)
+                block_copy = dict(block)
+                block_copy["columns"] = new_columns
+                new_blocks.append(schemas.ScheduleBlock.model_validate(block_copy))
 
         enriched.append(
             schemas.PublishedSchedule(
@@ -116,19 +105,20 @@ def retrieve_schedule(schedule_id: int, db: Session = Depends(get_db)):
 
 @router.post("/", response_model=schemas.Schedule, status_code=status.HTTP_201_CREATED)
 def create_schedule(payload: schemas.ScheduleCreate, db: Session = Depends(get_db)):
-    _ensure_line(db, payload.idLinea)
-    _ensure_stop(db, payload.idParada)
-    return create(db, models.Schedule, payload.model_dump())
+    data = payload.model_dump()
+    data["tipoDia"] = data["tipoDia"].upper()
+    data["horas"] = _normalize_hours_list(data["horas"])
+    return create(db, models.Schedule, data)
 
 
 @router.put("/{schedule_id}", response_model=schemas.Schedule)
 def update_schedule(schedule_id: int, payload: schemas.ScheduleUpdate, db: Session = Depends(get_db)):
     schedule = _get_schedule_or_404(schedule_id, db)
     data = payload.model_dump(exclude_unset=True)
-    if "idLinea" in data and data["idLinea"] is not None:
-        _ensure_line(db, data["idLinea"])
-    if "idParada" in data and data["idParada"] is not None:
-        _ensure_stop(db, data["idParada"])
+    if "tipoDia" in data and data["tipoDia"] is not None:
+        data["tipoDia"] = data["tipoDia"].upper()
+    if "horas" in data and data["horas"] is not None:
+        data["horas"] = _normalize_hours_list(data["horas"])
     if not data:
         return schedule
     return update(db, schedule, data)
