@@ -89,10 +89,10 @@ const PARADAS_LINEA1 = [
   { nombre: 'L1 Santa Marina', coord: d(-2.883024510937969, 43.255890099999405) },
   { nombre: 'L1 IES Etxebarri BHI', coord: d(-2.884890897506966, 43.25343406150203) },
   { nombre: 'L1 Goiko San Antonio Hiribidea', coord: d(-2.8839558722117618, 43.25103331923095) },
-  { nombre: 'L1 Marivi Iturbe Kalea', coord: d(-2.886034033873555, 43.248992351853026) },
+  { nombre: 'L1 Kukullaga Ikastetxea', coord: d(-2.886034033873555, 43.248992351853026) },
   { nombre: 'L1 Beheko San Antonio Hiribidea', coord: d(-2.8874842700078407, 43.24717715469667) },
-  { nombre: 'L1 Doneztebe Eliza 2', coord: d(-2.8912215474404075, 43.246038806411484) },
-  { nombre: 'L1 Metacal Kalea 2', coord: d(-2.893827387294854, 43.24495873405763) }
+  { nombre: 'L1 Doneztebe Eliza', coord: d(-2.8912215474404075, 43.246038806411484) },
+  { nombre: 'L1 Metacal Kalea', coord: d(-2.893827387294854, 43.24495873405763) }
 ];
 
 const PARADAS_LINEA2_POLIGONO = [

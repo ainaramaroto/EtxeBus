@@ -31,10 +31,10 @@ const FALLBACK_LINES = {
       'L1 Santa Marina',
       'L1 IES Etxebarri BHI',
       'L1 Goiko San Antonio Hiribidea',
-      'L1 Marivi Iturbe Kalea',
+      'L1 Kukullaga Ikastetxea',
       'L1 Beheko San Antonio Hiribidea',
-      'L1 Doneztebe Eliza 2',
-      'L1 Metacal Kalea 2',
+      'L1 Doneztebe Eliza',
+      'L1 Metacal Kalea',
       'L1 Metro Etxebarri'
     ]
   },

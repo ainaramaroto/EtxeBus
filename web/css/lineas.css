@@ -26,6 +26,7 @@ body {
 }
 
 .lines-header {
+  position: relative;
   background-color: var(--brand-blue);
   color: #fff;
   padding: 1rem 2.5rem;
@@ -38,6 +39,8 @@ body {
 }
 
 .lines-header .brand {
+  position: relative;
+  z-index: 1;
   text-decoration: none;
   color: #fff;
   display: flex;
@@ -60,6 +63,8 @@ body {
 }
 
 .lines-header nav {
+  position: relative;
+  z-index: 2;
   display: flex;
   flex: 1;
   justify-content: center;
@@ -433,5 +438,4 @@ body {
   pointer-events: none;
   color: inherit;
 }
-
 

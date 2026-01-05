@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EtxeBus - Planificar trayecto</title>
+  <link rel="stylesheet" href="../css/trayecto.css">
+</head>
+<body>
+  <header class="horarios-header">
+    <a class="brand" href="principal.html">
+      <img src="../image/logo.png" alt="Logo EtxeBus">
+      <div>
+        <strong>EtxeBus</strong>
+        <p>Transporte local de Etxebarri</p>
+      </div>
+    </a>
+    <nav>
+      <a class="nav-link" href="lineas.html">Lineas</a>
+      <a class="nav-link" href="horarios.html">Horarios</a>
+      <a class="nav-link active" href="trayecto.html">Trayecto</a>
+    </nav>
+    <div class="header-actions">
+      <button class="header-icon" type="button" aria-label="Favoritos">
+        <svg viewBox="0 0 24 24"><path d="M12 3l2.5 4.9 5.4.8-3.9 3.8.9 5.6L12 15.8 7.1 18.1l.9-5.6-3.9-3.8 5.4-.8z"/></svg>
+      </button>
+      <button class="header-icon" type="button" aria-label="Perfil">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 12a4 4 0 100-8 4 4 0 000 8z" fill="currentColor"/>
+          <path d="M5 20c0-3.3 3.1-6 7-6s7 2.7 7 6v1H5z" fill="currentColor"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="trayecto-main">
+    <section class="planner">
+      <div class="planner-header">
+        <div>
+          <p class="section-label">Planificador</p>
+          <h2>Proximos trayectos</h2>
+        </div>
+      </div>
+
+      <form id="planner-form" class="planner-form" autocomplete="off">
+        <div class="form-row form-row--stops">
+          <div class="form-group">
+            <label for="origin-input">Parada origen</label>
+            <div class="input-shell">
+              <input id="origin-input" class="combo-input" type="text" placeholder="Escribe o selecciona una parada" autocomplete="off" list="origin-options" required>
+              <datalist id="origin-options"></datalist>
+            </div>
+          </div>
+          <button type="button" id="swap-button" class="swap-btn" aria-label="Intercambiar paradas">
+            <svg viewBox="0 0 24 24">
+              <path d="M7 7l3-3 3 3M10 4v9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M17 17l-3 3-3-3M14 20v-9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <div class="form-group">
+            <label for="destination-input">Parada destino</label>
+            <div class="input-shell">
+              <input id="destination-input" class="combo-input" type="text" placeholder="Escribe o selecciona una parada" autocomplete="off" list="destination-options" required>
+              <datalist id="destination-options"></datalist>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row form-row--controls">
+          <div class="form-group when-group">
+            <label for="when-select">Cuando</label>
+            <div class="input-shell">
+              <select id="when-select">
+                <option value="now">Viajar ahora</option>
+                <option value="plan">Planificar hora</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="submit-btn">Consultar</button>
+          </div>
+        </div>
+
+        <div class="time-group" id="time-wrapper" hidden>
+          <label for="time-input">Hora estimada</label>
+          <div class="input-shell">
+            <input type="time" id="time-input" value="08:00">
+          </div>
+          <div class="time-picker" id="time-picker" aria-hidden="true">
+            <div class="time-slot">
+              <button type="button" class="time-step" data-unit="hour" data-step="1" aria-label="Sumar una hora">+</button>
+              <span id="hour-display">08</span>
+              <button type="button" class="time-step" data-unit="hour" data-step="-1" aria-label="Restar una hora">-</button>
+            </div>
+            <span class="time-separator">:</span>
+            <div class="time-slot">
+              <button type="button" class="time-step" data-unit="minute" data-step="5" aria-label="Sumar cinco minutos">+</button>
+              <span id="minute-display">00</span>
+              <button type="button" class="time-step" data-unit="minute" data-step="-5" aria-label="Restar cinco minutos">-</button>
+            </div>
+          </div>
+        </div>
+      </form>
+    </section>
+
+    <section class="results-panel" id="results-panel">
+      <div class="empty-state">
+        <h3>Configura tu viaje</h3>
+        <p>Selecciona parada de origen y destino para ver los proximos servicios disponibles.</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="../js/trayecto.js"></script>
+</body>
+</html>
