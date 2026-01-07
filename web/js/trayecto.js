@@ -65,7 +65,7 @@ const LINE_TRAVEL_PROFILE = {
   3: { totalMinutes: 5 },
   4: { totalMinutes: 10 },
 };
-const DEPARTURE_LABELS = {
+const LINE_DEPARTURE_LABELS = {
   1: 'Salida desde Metro Etxebarri',
   2: 'Salida desde Santa Marina',
   3: 'Salida desde Metro Etxebarri (Labur)',
@@ -73,7 +73,25 @@ const DEPARTURE_LABELS = {
 };
 const STOP_CHOICES = buildStopChoices();
 const STOP_CHOICE_MAP = new Map(STOP_CHOICES.map((choice) => [choice.slug, choice]));
+const STOP_ID_TO_SLUG = buildStopIdSlugMap(STOP_CHOICES);
 const LINE_STOP_SPAN = buildLineSpan();
+const LINE_STEP_MINUTES = buildLineStepMinutes(LINE_STOP_SPAN);
+const GROUP_DEPARTURE_LABELS = {
+  L1: {
+    forward: 'Salida desde Metro Etxebarri',
+    reverse: 'Salida desde Santa Marina',
+  },
+  L2: {
+    forward: 'Salida desde Metro Etxebarri',
+    reverse: 'Salida desde Santa Marina',
+  },
+};
+const GROUP_CANONICAL_PATHS = {
+  L1: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17],
+  L2: [28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39],
+};
+const MERGE_STOP_SLUGS = new Set(['l1-l1-santa-marina']);
+const GROUP_ORDER = buildGroupOrder();
 
 const originInput = document.getElementById('origin-input');
 const originOptions = document.getElementById('origin-options');
@@ -295,6 +313,7 @@ function handleFormSubmit(event) {
     showStatus('No hay horarios asociados a la parada seleccionada.', true);
     return;
   }
+  const scheduleStopId = schedule.stopId || trip.origin.id;
 
   const baseMinutes = baseTime.getHours() * 60 + baseTime.getMinutes();
   const upcoming = getNextDepartures(schedule.horas, baseMinutes);
@@ -305,7 +324,8 @@ function handleFormSubmit(event) {
 
   const nextDeparture = upcoming[0];
   const diffMinutes = Math.max(toMinutes(nextDeparture) - baseMinutes, 0);
-  const travelMinutes = estimateTravelMinutes(trip.origin, trip.destination);
+  const travelMinutes = estimateTravelMinutes(trip);
+  const waitMinutes = diffMinutes + calculateDepartureOffset(trip, scheduleStopId);
   renderResult({
     origin: trip.origin,
     destination: trip.destination,
@@ -313,13 +333,74 @@ function handleFormSubmit(event) {
     nextDeparture,
     diffMinutes,
     travelMinutes,
+    waitMinutes,
     upcoming: upcoming.slice(1),
     scheduleType: schedule.tipoDia,
     referenceTime: baseTime,
+    pathIds: trip.pathIds,
+    direction: trip.direction,
+    group: trip.group,
   });
 }
 
 function resolveTripStops(originChoice, destinationChoice) {
+  if (!originChoice || !destinationChoice) {
+    return null;
+  }
+  if (originChoice.group === destinationChoice.group) {
+    const group = originChoice.group;
+    const orderList = GROUP_ORDER[group];
+    if (orderList) {
+      const originIndexes = findAllIndexes(orderList, originChoice.slug);
+      const destinationIndexes = findAllIndexes(orderList, destinationChoice.slug);
+      if (originIndexes.length && destinationIndexes.length) {
+        let best = null;
+        originIndexes.forEach((originIndex) => {
+          destinationIndexes.forEach((destinationIndex) => {
+            if (originIndex === destinationIndex) return;
+            const direction = originIndex <= destinationIndex ? 'forward' : 'reverse';
+            const rawSegment =
+              direction === 'forward'
+                ? orderList.slice(originIndex, destinationIndex + 1)
+                : orderList.slice(destinationIndex, originIndex + 1);
+            const segment = direction === 'forward' ? rawSegment : rawSegment.slice().reverse();
+            const stops = [];
+            let isValidSegment = true;
+            segment.forEach((entry) => {
+              if (!isValidSegment) return;
+              const stop = STOP_MAP.get(entry.stopId);
+              if (!stop) {
+                isValidSegment = false;
+                return;
+              }
+              stops.push(stop);
+            });
+            if (!isValidSegment || !stops.length) {
+              return;
+            }
+            const candidate = {
+              origin: stops[0],
+              destination: stops[stops.length - 1],
+              group,
+              direction,
+              pathIds: stops.map((stop) => stop.id),
+            };
+            if (isBetterPathCandidate(candidate, best)) {
+              best = candidate;
+            }
+          });
+        });
+        if (best) {
+          return best;
+        }
+      }
+    }
+  }
+
+  return resolveByLineIntersection(originChoice, destinationChoice);
+}
+
+function resolveByLineIntersection(originChoice, destinationChoice) {
   let best = null;
   let bestDiff = Number.POSITIVE_INFINITY;
   originChoice.options.forEach((originStop) => {
@@ -327,7 +408,18 @@ function resolveTripStops(originChoice, destinationChoice) {
       if (originStop.lineId === destStop.lineId && originStop.id !== destStop.id) {
         const diff = Math.abs((originStop.order || 0) - (destStop.order || 0));
         if (diff && diff < bestDiff) {
-          best = { origin: originStop, destination: destStop };
+          const direction = (originStop.order || 0) <= (destStop.order || 0) ? 'forward' : 'reverse';
+          const pathSegment = getLineSegmentStops(originStop, destStop);
+          if (!pathSegment.length) {
+            return;
+          }
+          best = {
+            origin: originStop,
+            destination: destStop,
+            group: LINE_GROUP[originStop.lineId] || `L${originStop.lineId}`,
+            direction,
+            pathIds: pathSegment.map((stop) => stop.id),
+          };
           bestDiff = diff;
         }
       }
@@ -368,21 +460,23 @@ function pickSchedule(stopId, referenceDate, lineId) {
       ? ['LECTIVO', 'NO_LECTIVO', 'FESTIVO']
       : ['FESTIVO', 'LECTIVO', 'NO_LECTIVO'];
 
-  for (const tipo of fallback) {
-    const key = `${stopId}-${tipo}`;
-    if (scheduleMap.has(key)) {
-      return { tipoDia: tipo, horas: scheduleMap.get(key) };
-    }
-  }
-
-  if (lineId && LINE_DEFAULT_STOP[lineId] && LINE_DEFAULT_STOP[lineId] !== stopId) {
-    const defaultKey = LINE_DEFAULT_STOP[lineId];
+  const tryPick = (candidateId) => {
+    if (!candidateId) return null;
     for (const tipo of fallback) {
-      const key = `${defaultKey}-${tipo}`;
+      const key = `${candidateId}-${tipo}`;
       if (scheduleMap.has(key)) {
-        return { tipoDia: tipo, horas: scheduleMap.get(key) };
+        return { tipoDia: tipo, horas: scheduleMap.get(key), stopId: candidateId };
       }
     }
+    return null;
+  };
+
+  const directMatch = tryPick(stopId);
+  if (directMatch) return directMatch;
+
+  if (lineId && LINE_DEFAULT_STOP[lineId] && LINE_DEFAULT_STOP[lineId] !== stopId) {
+    const fallbackMatch = tryPick(LINE_DEFAULT_STOP[lineId]);
+    if (fallbackMatch) return fallbackMatch;
   }
   return null;
 }
@@ -455,25 +549,45 @@ function syncTimeDisplays() {
   minuteDisplay.textContent = String(Number.isNaN(minute) ? 0 : minute).padStart(2, '0');
 }
 
-function estimateTravelMinutes(origin, destination) {
-  if (!origin || !destination || origin.lineId !== destination.lineId) {
+function estimateTravelMinutes(trip) {
+  if (!trip) return 0;
+  if (Array.isArray(trip.pathIds) && trip.pathIds.length >= 2) {
+    let total = 0;
+    for (let index = 1; index < trip.pathIds.length; index += 1) {
+      const prevStop = STOP_MAP.get(trip.pathIds[index - 1]);
+      const hopMinutes = prevStop ? LINE_STEP_MINUTES.get(prevStop.lineId) : null;
+      total += hopMinutes || 2;
+    }
+    return Math.max(1, Math.round(total));
+  }
+  const { origin, destination } = trip;
+  if (!origin || !destination) {
     return 0;
   }
-  const profile = LINE_TRAVEL_PROFILE[origin.lineId];
-  const span = LINE_STOP_SPAN.get(origin.lineId);
-  if (profile && span) {
-    const totalSteps = Math.max(span.max - span.min, 1);
-    const orderDiff = Math.abs((origin.order || span.min) - (destination.order || span.min));
-    const ratio = orderDiff / totalSteps;
-    const estimate = Math.round(profile.totalMinutes * ratio);
-    return Math.max(1, estimate);
+  if (origin.lineId === destination.lineId) {
+    const profile = LINE_TRAVEL_PROFILE[origin.lineId];
+    const span = LINE_STOP_SPAN.get(origin.lineId);
+    if (profile && span) {
+      const totalSteps = Math.max(span.max - span.min, 1);
+      const orderDiff = Math.abs((origin.order || span.min) - (destination.order || span.min));
+      const ratio = orderDiff / totalSteps;
+      const estimate = Math.round(profile.totalMinutes * ratio);
+      return Math.max(1, estimate);
+    }
+    const difference = Math.abs((origin.order || 1) - (destination.order || 1));
+    return Math.max(6, difference * 3);
   }
-  const difference = Math.abs((origin.order || 1) - (destination.order || 1));
-  return Math.max(6, difference * 3);
+  return Math.max(3, trip.pathIds ? trip.pathIds.length : 0);
 }
 
-function getDepartureLabel(lineId) {
-  return DEPARTURE_LABELS[lineId] || 'Salida desde la parada seleccionada';
+function getDepartureLabel(group, direction, lineId) {
+  if (group && direction) {
+    const label = GROUP_DEPARTURE_LABELS[group]?.[direction];
+    if (label) {
+      return label;
+    }
+  }
+  return LINE_DEPARTURE_LABELS[lineId] || 'Salida desde la parada seleccionada';
 }
 
 function renderResult({
@@ -483,18 +597,23 @@ function renderResult({
   nextDeparture,
   diffMinutes,
   travelMinutes,
+  waitMinutes,
   upcoming,
   scheduleType,
   referenceTime,
+  pathIds,
+  direction,
+  group,
 }) {
   const countdownLabel = diffMinutes <= 0 ? 'Listo para salir' : `${diffMinutes} min`;
-  const departureLabel = getDepartureLabel(origin.lineId);
+  const departureLabel = getDepartureLabel(group, direction, origin.lineId);
+  const waitDisplay = Number.isFinite(waitMinutes) ? `${waitMinutes} min` : '—';
   const upcomingList = upcoming.length
     ? `<div><p class="muted-label">Siguientes servicios</p><ul class="timeline">${upcoming
         .map((time) => `<li>${time}</li>`)
         .join('')}</ul></div>`
     : '<p class="muted-label">No hay mas salidas cercanas.</p>';
-  const routeTimeline = buildRouteTimeline(origin, destination);
+  const routeTimeline = buildRouteTimeline(pathIds, origin, destination);
 
   resultsPanel.innerHTML = `
     <div class="result-card">
@@ -522,6 +641,10 @@ function renderResult({
         ${upcomingList}
       </div>
       <div class="result-meta">
+        <div>
+          <p>Espera estimada</p>
+          <span>${waitDisplay}</span>
+        </div>
         <div>
           <p>Duracion estimada</p>
           <span>${travelMinutes} min</span>
@@ -551,9 +674,57 @@ function showEmptyState() {
   `;
 }
 
-function buildRouteTimeline(origin, destination) {
+function buildRouteTimeline(pathIds, origin, destination) {
+  if (Array.isArray(pathIds) && pathIds.length) {
+    const timelineStops = buildTimelineStopsFromPath(pathIds);
+    const items = timelineStops
+      .map(({ stop, label, ids }, index) => {
+        const classes = [];
+        if (origin && ids.includes(origin.id)) classes.push('is-origin');
+        if (destination && ids.includes(destination.id)) classes.push('is-destination');
+        const classAttr = classes.length ? ` class="${classes.join(' ')}"` : '';
+        const text = label || (stop ? formatStopLabel(stop) : `Parada ${index + 1}`);
+        return `<li${classAttr}><span>${text}</span></li>`;
+      })
+      .join('');
+    return `
+      <div class="route-timeline">
+        <p class="muted-label">Paradas del trayecto</p>
+        <ul class="stop-timeline">${items}</ul>
+      </div>
+    `;
+  }
+  if (origin && destination && origin.lineId === destination.lineId) {
+    return buildLineTimeline(origin, destination);
+  }
+  return '';
+}
+
+function buildLineTimeline(origin, destination) {
+  const segment = getLineSegmentStops(origin, destination);
+  if (!segment.length) return '';
+  const timelineStops = buildTimelineStopsFromPath(segment.map((stop) => stop.id));
+  const items = timelineStops
+    .map(({ stop, label, ids }, index) => {
+      const classes = [];
+      if (origin && ids.includes(origin.id)) classes.push('is-origin');
+      if (destination && ids.includes(destination.id)) classes.push('is-destination');
+      const classAttr = classes.length ? ` class="${classes.join(' ')}"` : '';
+      const text = label || (stop ? formatStopLabel(stop) : `Parada ${index + 1}`);
+      return `<li${classAttr}><span>${text}</span></li>`;
+    })
+    .join('');
+  return `
+    <div class="route-timeline">
+      <p class="muted-label">Paradas del trayecto</p>
+      <ul class="stop-timeline">${items}</ul>
+    </div>
+  `;
+}
+
+function getLineSegmentStops(origin, destination) {
   if (!origin || !destination || origin.lineId !== destination.lineId) {
-    return '';
+    return [];
   }
   const sortedStops = STOP_CATALOG.filter((stop) => stop.lineId === origin.lineId).sort(
     (a, b) => (a.order || 0) - (b.order || 0),
@@ -565,24 +736,7 @@ function buildRouteTimeline(origin, destination) {
   if (!forward) {
     segment = [...segment].reverse();
   }
-  if (!segment.length) {
-    return '';
-  }
-  const items = segment
-    .map((stop) => {
-      const classes = [];
-      if (stop.id === origin.id) classes.push('is-origin');
-      if (stop.id === destination.id) classes.push('is-destination');
-      const classAttr = classes.length ? ` class="${classes.join(' ')}"` : '';
-      return `<li${classAttr}><span>${formatStopLabel(stop)}</span></li>`;
-    })
-    .join('');
-  return `
-    <div class="route-timeline">
-      <p class="muted-label">Paradas del trayecto</p>
-      <ul class="stop-timeline">${items}</ul>
-    </div>
-  `;
+  return segment;
 }
 
 function buildLineSpan() {
@@ -595,4 +749,139 @@ function buildLineSpan() {
     span.set(stop.lineId, info);
   });
   return span;
+}
+
+function buildStopIdSlugMap(choices) {
+  const map = new Map();
+  choices.forEach((choice) => {
+    choice.options.forEach((stop) => {
+      map.set(stop.id, choice.slug);
+    });
+  });
+  return map;
+}
+
+function buildLineStepMinutes(spanMap) {
+  const steps = new Map();
+  spanMap.forEach((span, lineId) => {
+    const profile = LINE_TRAVEL_PROFILE[lineId];
+    if (!profile) return;
+    const totalSteps = Math.max(span.max - span.min, 1);
+    steps.set(lineId, profile.totalMinutes / totalSteps);
+  });
+  return steps;
+}
+
+function buildGroupOrder() {
+  const order = {};
+  Object.entries(GROUP_CANONICAL_PATHS).forEach(([group, stopIds]) => {
+    const entries = stopIds
+      .map((stopId) => {
+        const stop = STOP_MAP.get(stopId);
+        const slug = STOP_ID_TO_SLUG.get(stopId);
+        if (!stop || !slug) {
+          return null;
+        }
+        return { slug, stopId };
+      })
+      .filter(Boolean);
+    if (entries.length) {
+      order[group] = entries;
+    }
+  });
+  return order;
+}
+
+function findAllIndexes(list, slug) {
+  if (!Array.isArray(list)) return [];
+  const indexes = [];
+  list.forEach((entry, index) => {
+    if (entry.slug === slug) {
+      indexes.push(index);
+    }
+  });
+  return indexes;
+}
+
+function isBetterPathCandidate(candidate, current) {
+  if (!candidate) return false;
+  if (!current) return true;
+  const candidateDirectionScore = candidate.direction === 'forward' ? 0 : 1;
+  const currentDirectionScore = current.direction === 'forward' ? 0 : 1;
+  if (candidateDirectionScore !== currentDirectionScore) {
+    return candidateDirectionScore < currentDirectionScore;
+  }
+  if (candidate.pathIds.length !== current.pathIds.length) {
+    return candidate.pathIds.length < current.pathIds.length;
+  }
+  const candidateOrder = candidate.origin?.order || 0;
+  const currentOrder = current.origin?.order || 0;
+  return candidateOrder < currentOrder;
+}
+
+function buildTimelineStopsFromPath(pathIds) {
+  const timeline = [];
+  pathIds.forEach((stopId, index) => {
+    const stop = STOP_MAP.get(stopId);
+    const label = stop ? formatStopLabel(stop) : `Parada ${index + 1}`;
+    const slugKey = STOP_ID_TO_SLUG.get(stopId);
+    const allowMerge = slugKey ? MERGE_STOP_SLUGS.has(slugKey) : false;
+    const mergeKey = allowMerge ? slugKey : null;
+    const lastEntry = timeline[timeline.length - 1];
+    if (allowMerge && lastEntry && lastEntry.mergeKey === mergeKey) {
+      if (stop) {
+        lastEntry.ids.push(stopId);
+        if (!lastEntry.stop) {
+          lastEntry.stop = stop;
+        }
+      }
+      return;
+    }
+    timeline.push({
+      stop: stop || null,
+      label,
+      mergeKey,
+      ids: stop ? [stopId] : [],
+    });
+  });
+  return timeline;
+}
+
+function calculateDepartureOffset(trip, scheduleStopId) {
+  if (!trip || !scheduleStopId || !trip.group || !trip.direction || !trip.origin) {
+    return 0;
+  }
+  if (scheduleStopId === trip.origin.id) {
+    return 0;
+  }
+  const segment = getCanonicalSegment(trip.group, scheduleStopId, trip.origin.id, trip.direction);
+  if (!segment || segment.length < 2) {
+    return 0;
+  }
+  let totalMinutes = 0;
+  for (let index = 1; index < segment.length; index += 1) {
+    const prevStop = STOP_MAP.get(segment[index - 1]);
+    totalMinutes += LINE_STEP_MINUTES.get(prevStop?.lineId) || 2;
+  }
+  return Math.round(totalMinutes);
+}
+
+function getCanonicalSegment(group, startId, endId, direction) {
+  const ids = GROUP_CANONICAL_PATHS[group];
+  if (!ids) return null;
+  const startIndex = ids.indexOf(startId);
+  const endIndex = ids.indexOf(endId);
+  if (startIndex === -1 || endIndex === -1) {
+    return null;
+  }
+  if (direction === 'forward') {
+    if (startIndex > endIndex) return null;
+    return ids.slice(startIndex, endIndex + 1);
+  }
+  if (direction === 'reverse') {
+    if (startIndex < endIndex) return null;
+    const slice = ids.slice(endIndex, startIndex + 1);
+    return slice.reverse();
+  }
+  return null;
 }

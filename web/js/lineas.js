@@ -6,7 +6,7 @@ const FALLBACK_LINES = {
   'l1-metro': {
     name: 'Metro',
     badge: 'Linea 1',
-    subtitle: 'Metro -> Santa Marina',
+    subtitle: 'Metro → Santa Marina',
     color: '#0074D9',
     info: 'Conecta el metro con el barrio alto. Ideal en horas punta de la manana.',
     stops: [
@@ -24,7 +24,7 @@ const FALLBACK_LINES = {
   'l1-santamarina': {
     name: 'Santa Marina',
     badge: 'Linea 1',
-    subtitle: 'Santa Marina -> Metro',
+    subtitle: 'Santa Marina → Metro',
     color: '#FFC107',
     info: 'Recorre el casco urbano y baja hacia el metro pasando por los centros escolares.',
     stops: [

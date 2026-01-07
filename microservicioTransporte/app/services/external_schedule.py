@@ -463,13 +463,13 @@ def _build_l2_custom_blocks(db: Session) -> list[dict] | None:
     if not luze_hours:
         return None
 
-    note = "* Los horarios resaltados en verde son de la Linea 2 - Labur"
+    note = "* Los horarios resaltados en verde son de la Linea 2 - Labur (Metro -> Boquete)"
     return [
         {
             "title": "Laborables",
             "columns": [
                 {
-                    "label": "Servicio Luze (Metro -> Boquete)",
+                    "label": "Servicio Luze (Metro -> Poligono -> Boquete)",
                     "items": _hours_to_items(luze_hours, highlight=labur_hours),
                 }
             ],
