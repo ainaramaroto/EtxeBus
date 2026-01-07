@@ -236,6 +236,7 @@ body {
 .swap-btn svg {
   width: 22px;
   height: 22px;
+  transform: rotate(90deg);
 }
 
 .form-actions {

@@ -91,7 +91,7 @@ const GROUP_CANONICAL_PATHS = {
   L2: [28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39],
 };
 const MERGE_STOP_SLUGS = new Set(['l1-l1-santa-marina']);
-const GROUP_ORDER = buildGroupOrder();
+const GROUP_CANONICAL_INDEX = buildCanonicalIndexMap();
 
 const originInput = document.getElementById('origin-input');
 const originOptions = document.getElementById('origin-options');
@@ -175,12 +175,12 @@ function populateStopOptions(inputEl, datalistEl, allowedLines = null, excludeSl
 }
 
 function handleOriginInput() {
-  syncInputSelection(originInput, originOptions);
+  syncInputSelection(originInput);
   updateDestinationOptions();
 }
 
 function handleDestinationInput() {
-  syncInputSelection(destinationInput, destinationOptions);
+  syncInputSelection(destinationInput);
   updateOriginOptions();
 }
 
@@ -198,18 +198,16 @@ function handleComboBlur(event) {
   }
 }
 
-function syncInputSelection(inputEl, datalistEl) {
+function syncInputSelection(inputEl) {
   const value = inputEl.value.trim();
   if (!value) {
     delete inputEl.dataset.choiceSlug;
     return;
   }
-  const match = Array.from(datalistEl.options).find(
-    (option) => option.value.toLowerCase() === value.toLowerCase(),
-  );
+  const match = STOP_CHOICES.find((choice) => choice.label.toLowerCase() === value.toLowerCase());
   if (match) {
-    inputEl.value = match.value;
-    inputEl.dataset.choiceSlug = match.dataset.choiceSlug;
+    inputEl.value = match.label;
+    inputEl.dataset.choiceSlug = match.slug;
   } else {
     delete inputEl.dataset.choiceSlug;
   }
@@ -340,6 +338,7 @@ function handleFormSubmit(event) {
     pathIds: trip.pathIds,
     direction: trip.direction,
     group: trip.group,
+    scheduleStopId,
   });
 }
 
@@ -349,50 +348,40 @@ function resolveTripStops(originChoice, destinationChoice) {
   }
   if (originChoice.group === destinationChoice.group) {
     const group = originChoice.group;
-    const orderList = GROUP_ORDER[group];
-    if (orderList) {
-      const originIndexes = findAllIndexes(orderList, originChoice.slug);
-      const destinationIndexes = findAllIndexes(orderList, destinationChoice.slug);
-      if (originIndexes.length && destinationIndexes.length) {
-        let best = null;
-        originIndexes.forEach((originIndex) => {
-          destinationIndexes.forEach((destinationIndex) => {
-            if (originIndex === destinationIndex) return;
-            const direction = originIndex <= destinationIndex ? 'forward' : 'reverse';
-            const rawSegment =
-              direction === 'forward'
-                ? orderList.slice(originIndex, destinationIndex + 1)
-                : orderList.slice(destinationIndex, originIndex + 1);
-            const segment = direction === 'forward' ? rawSegment : rawSegment.slice().reverse();
-            const stops = [];
-            let isValidSegment = true;
-            segment.forEach((entry) => {
-              if (!isValidSegment) return;
-              const stop = STOP_MAP.get(entry.stopId);
-              if (!stop) {
-                isValidSegment = false;
-                return;
-              }
-              stops.push(stop);
-            });
-            if (!isValidSegment || !stops.length) {
-              return;
-            }
-            const candidate = {
-              origin: stops[0],
-              destination: stops[stops.length - 1],
-              group,
-              direction,
-              pathIds: stops.map((stop) => stop.id),
-            };
-            if (isBetterPathCandidate(candidate, best)) {
-              best = candidate;
-            }
-          });
+    const canonicalPath = GROUP_CANONICAL_PATHS[group];
+    const indexMap = GROUP_CANONICAL_INDEX[group];
+    if (canonicalPath && indexMap) {
+      let best = null;
+      originChoice.options.forEach((originStop) => {
+        destinationChoice.options.forEach((destStop) => {
+          if (originStop.id === destStop.id) return;
+          const originIndex = indexMap.get(originStop.id);
+          const destinationIndex = indexMap.get(destStop.id);
+          if (originIndex == null || destinationIndex == null || originIndex === destinationIndex) {
+            return;
+          }
+          const direction = originIndex <= destinationIndex ? 'forward' : 'reverse';
+          const segment =
+            direction === 'forward'
+              ? canonicalPath.slice(originIndex, destinationIndex + 1)
+              : canonicalPath.slice(destinationIndex, originIndex + 1).reverse();
+          if (!segment.length) {
+            return;
+          }
+          const candidate = {
+            origin: originStop,
+            destination: destStop,
+            group,
+            direction,
+            pathIds: segment.slice(),
+          };
+          if (isBetterPathCandidate(candidate, best)) {
+            best = candidate;
+          }
         });
-        if (best) {
-          return best;
-        }
+      });
+      if (best) {
+        return best;
       }
     }
   }
@@ -580,7 +569,16 @@ function estimateTravelMinutes(trip) {
   return Math.max(3, trip.pathIds ? trip.pathIds.length : 0);
 }
 
-function getDepartureLabel(group, direction, lineId) {
+function getDepartureLabel(group, direction, lineId, scheduleStopId) {
+  if (scheduleStopId) {
+    const stop = STOP_MAP.get(scheduleStopId);
+    if (stop) {
+      const stopLabel = LINE_DEPARTURE_LABELS[stop.lineId];
+      if (stopLabel) {
+        return stopLabel;
+      }
+    }
+  }
   if (group && direction) {
     const label = GROUP_DEPARTURE_LABELS[group]?.[direction];
     if (label) {
@@ -604,9 +602,10 @@ function renderResult({
   pathIds,
   direction,
   group,
+  scheduleStopId,
 }) {
   const countdownLabel = diffMinutes <= 0 ? 'Listo para salir' : `${diffMinutes} min`;
-  const departureLabel = getDepartureLabel(group, direction, origin.lineId);
+  const departureLabel = getDepartureLabel(group, direction, origin.lineId, scheduleStopId);
   const waitDisplay = Number.isFinite(waitMinutes) ? `${waitMinutes} min` : '—';
   const upcomingList = upcoming.length
     ? `<div><p class="muted-label">Siguientes servicios</p><ul class="timeline">${upcoming
@@ -772,35 +771,16 @@ function buildLineStepMinutes(spanMap) {
   return steps;
 }
 
-function buildGroupOrder() {
-  const order = {};
+function buildCanonicalIndexMap() {
+  const result = {};
   Object.entries(GROUP_CANONICAL_PATHS).forEach(([group, stopIds]) => {
-    const entries = stopIds
-      .map((stopId) => {
-        const stop = STOP_MAP.get(stopId);
-        const slug = STOP_ID_TO_SLUG.get(stopId);
-        if (!stop || !slug) {
-          return null;
-        }
-        return { slug, stopId };
-      })
-      .filter(Boolean);
-    if (entries.length) {
-      order[group] = entries;
-    }
+    const map = new Map();
+    stopIds.forEach((stopId, index) => {
+      map.set(stopId, index);
+    });
+    result[group] = map;
   });
-  return order;
-}
-
-function findAllIndexes(list, slug) {
-  if (!Array.isArray(list)) return [];
-  const indexes = [];
-  list.forEach((entry, index) => {
-    if (entry.slug === slug) {
-      indexes.push(index);
-    }
-  });
-  return indexes;
+  return result;
 }
 
 function isBetterPathCandidate(candidate, current) {
