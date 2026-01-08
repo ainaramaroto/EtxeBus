@@ -40,15 +40,17 @@ Variables relevantes:
 
 Todos los endpoints se exponen bajo el prefijo `/api`. Los principales recursos disponibles son:
 
-- `GET /api/usuarios` — Lista usuarios.
+- `GET /api/usuarios` – Lista usuarios.
 - `POST /api/usuarios` — Crea un usuario.
 - `GET /api/usuarios/:id` — Recupera un usuario especifico.
 - `PUT /api/usuarios/:id` — Actualiza un usuario.
 - `DELETE /api/usuarios/:id` — Elimina un usuario.
 - `POST /api/usuarios/login` — Reenvia las credenciales al microservicio para autenticacion.
-- `GET /api/horarios` — Proxy directo al microservicio de transporte para consultar horarios crudos (`line_id`, `stop_id`, etc.).
-- `GET /api/horarios/publicados` — Devuelve los horarios publicados que consume el frontend.
-- `GET /api/health` — Endpoint de salud del gateway.
+- `GET /api/horarios` – Proxy directo al microservicio de transporte para consultar horarios crudos (`line_id`, `stop_id`, etc.).
+- `GET /api/horarios/publicados` – Devuelve los horarios publicados que consume el frontend.
+- `GET /api/lineas` y `GET /api/lineas/:id` – Recuperan la informacion de lineas desde el microservicio de transporte.
+- `GET /api/paradas` y `GET /api/paradas/:id` – Devuelven paradas; aceptan `line_id` como filtro opcional.
+- `GET /api/health` – Endpoint de salud del gateway.
 
 ## Docker
 

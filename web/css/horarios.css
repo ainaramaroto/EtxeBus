@@ -148,29 +148,6 @@ body {
   display: none;
 }
 
-.intro-panel {
-  background: #ffffff;
-  border-radius: 24px;
-  padding: clamp(0.9rem, 2vw, 1.2rem) clamp(1rem, 3vw, 1.5rem);
-  box-shadow: 0 16px 40px rgba(14, 39, 71, 0.1);
-  flex-shrink: 0;
-  width: min(100%, 720px);
-  margin: 0 auto;
-  align-self: center;
-}
-
-.intro-panel h2 {
-  margin: 0;
-  font-size: 1.65rem;
-}
-
-.intro-panel p {
-  margin: 0.15rem 0 0;
-  color: var(--muted-color);
-  font-size: 0.95rem;
-  line-height: 1.45;
-}
-
 .schedule-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -228,18 +205,6 @@ body {
 
 .schedule-card.linea1 {
   --line-color: #0074d9;
-}
-
-.schedule-card.linea1-retorno {
-  --line-color: #ffc107;
-}
-
-.schedule-card.linea2-luze {
-  --line-color: #1b8f3a;
-}
-
-.schedule-card.linea2-labur {
-  --line-color: #c6ff00;
 }
 
 .schedule-toggle {
@@ -316,30 +281,6 @@ body {
   border-radius: 999px;
   font-weight: 700;
   font-size: 0.9rem;
-}
-
-.schedule-table {
-  width: 100%;
-  border-collapse: collapse;
-  border-radius: 16px;
-  overflow: hidden;
-  border: 1px solid var(--border-color);
-  margin-bottom: 1rem;
-}
-
-.schedule-table th {
-  background: color-mix(in srgb, var(--line-color) 20%, #ffffff);
-  color: var(--line-color);
-  padding: 0.65rem;
-  font-weight: 700;
-  font-size: 0.9rem;
-}
-
-.schedule-table td {
-  text-align: center;
-  padding: 0.5rem;
-  border-top: 1px solid var(--border-color);
-  font-weight: 600;
 }
 
 .schedule-section {
@@ -455,18 +396,10 @@ body {
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.25);
 }
 
-.schedule-table td strong {
-  color: var(--line-color, #0f5f97);
-}
-
 @media (max-width: 720px) {
   .horarios-header {
     flex-direction: column;
     padding: 1rem;
-  }
-
-  .intro-panel {
-    padding: 1.25rem;
   }
 
   .schedule-card {
