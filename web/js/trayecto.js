@@ -92,6 +92,9 @@ const GROUP_CANONICAL_PATHS = {
 };
 const MERGE_STOP_SLUGS = new Set(['l1-l1-santa-marina']);
 const GROUP_CANONICAL_INDEX = buildCanonicalIndexMap();
+const SESSION_STORAGE_KEY = 'etxebusSession';
+let favoriteTrips = [];
+let isAuthenticated = isUserLoggedIn();
 
 const originInput = document.getElementById('origin-input');
 const originOptions = document.getElementById('origin-options');
@@ -106,10 +109,16 @@ const minuteDisplay = document.getElementById('minute-display');
 const plannerForm = document.getElementById('planner-form');
 const resultsPanel = document.getElementById('results-panel');
 const swapButton = document.getElementById('swap-button');
+const favoriteButton = document.getElementById('favorite-button');
+const favoritesPanel = document.getElementById('favorites-panel');
+const favoritesListEl = document.getElementById('favorites-list');
+const favoritesCloseButton = document.getElementById('favorites-close');
+const headerFavoritesButton = document.getElementById('header-favorites-button');
 
 document.addEventListener('DOMContentLoaded', initPlanner);
 
 async function initPlanner() {
+  setupAuthTracking();
   populateStopOptions(originInput, originOptions);
   populateStopOptions(destinationInput, destinationOptions);
   timeInput.value = formatTimeInput(new Date());
@@ -129,8 +138,22 @@ async function initPlanner() {
     timePicker.addEventListener('click', handleTimePickerClick);
   }
   timeInput.addEventListener('input', syncTimeDisplays);
+  if (favoriteButton) {
+    favoriteButton.addEventListener('click', handleFavoriteClick);
+  }
+  if (favoritesCloseButton) {
+    favoritesCloseButton.addEventListener('click', () => toggleFavoritesPanel(false));
+  }
+  if (favoritesListEl) {
+    favoritesListEl.addEventListener('click', handleFavoritesListClick);
+  }
+  if (headerFavoritesButton) {
+    headerFavoritesButton.addEventListener('click', () => toggleFavoritesPanel());
+  }
   updateDestinationOptions();
   updateOriginOptions();
+  updateFavoriteControl();
+  await refreshFavorites();
   await loadSchedules();
 }
 
@@ -174,14 +197,35 @@ function populateStopOptions(inputEl, datalistEl, allowedLines = null, excludeSl
   });
 }
 
+function setupAuthTracking() {
+  if (window.EtxebusSession && typeof window.EtxebusSession.subscribe === 'function') {
+    window.EtxebusSession.subscribe(({ loggedIn }) => {
+      isAuthenticated = Boolean(loggedIn);
+      if (!isAuthenticated) {
+        favoriteTrips = [];
+        renderFavoritePanel();
+        if (favoritesPanel) {
+          favoritesPanel.setAttribute('hidden', '');
+        }
+      }
+      updateFavoriteControl();
+      refreshFavorites();
+    });
+  } else {
+    isAuthenticated = isUserLoggedIn();
+  }
+}
+
 function handleOriginInput() {
   syncInputSelection(originInput);
   updateDestinationOptions();
+  updateFavoriteControl();
 }
 
 function handleDestinationInput() {
   syncInputSelection(destinationInput);
   updateOriginOptions();
+  updateFavoriteControl();
 }
 
 function handleComboFocus(event) {
@@ -249,6 +293,140 @@ function ensureChoiceAvailability(inputEl, datalistEl) {
   }
 }
 
+async function refreshFavorites() {
+  if (!isAuthenticated) {
+    favoriteTrips = [];
+    renderFavoritePanel();
+    updateFavoriteControl();
+    return;
+  }
+  const credentials = getCurrentUserCredentials();
+  if (!credentials || !credentials.usuario || !credentials.contrasenia) {
+    favoriteTrips = [];
+    renderFavoritePanel();
+    updateFavoriteControl();
+    return;
+  }
+  try {
+    const params = new URLSearchParams({
+      usuario: credentials.usuario,
+      contrasenia: credentials.contrasenia,
+    });
+    const response = await fetch(`${API_BASE_URL}/favoritos?${params.toString()}`);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    favoriteTrips = payload.data || [];
+  } catch (error) {
+    console.warn('No se pudieron cargar los favoritos:', error);
+  }
+  renderFavoritePanel();
+  updateFavoriteControl();
+}
+
+function toggleFavoritesPanel(force) {
+  if (!favoritesPanel) return;
+  const shouldShow = typeof force === 'boolean' ? force : favoritesPanel.hasAttribute('hidden');
+  if (!isAuthenticated) {
+    favoritesPanel.setAttribute('hidden', '');
+    showStatus('Inicia sesion para consultar tus favoritos.', true);
+    return;
+  }
+  if (shouldShow) {
+    favoritesPanel.removeAttribute('hidden');
+    refreshFavorites();
+  } else {
+    favoritesPanel.setAttribute('hidden', '');
+  }
+}
+
+async function handleFavoritesListClick(event) {
+  const button = event.target.closest('button[data-action]');
+  if (!button) return;
+  const action = button.dataset.action;
+  const favoriteId = button.dataset.favoriteId;
+  const originSlug = button.dataset.origin;
+  const destinationSlug = button.dataset.destination;
+  if (action === 'apply') {
+    applyFavoriteToPlanner(originSlug, destinationSlug);
+    toggleFavoritesPanel(false);
+    executePlannerQuery('favorite');
+    return;
+  }
+  if (action === 'remove') {
+    const credentials = getCurrentUserCredentials();
+    if (!credentials) return;
+    try {
+      await removeFavorite(favoriteId, credentials);
+      await refreshFavorites();
+    } catch (error) {
+      console.warn('No se pudo eliminar el favorito', error);
+      showStatus('No se pudo eliminar el favorito seleccionado.', true);
+    }
+  }
+}
+
+function applyFavoriteToPlanner(originSlug, destinationSlug) {
+  if (!originSlug || !destinationSlug) return;
+  setInputChoice(originInput, originOptions, originSlug);
+  handleOriginInput();
+  setInputChoice(destinationInput, destinationOptions, destinationSlug);
+  handleDestinationInput();
+}
+async function handleFavoriteClick() {
+  if (!favoriteButton || favoriteButton.disabled) return;
+  const originChoice = getSelectedChoice(originInput);
+  const destinationChoice = getSelectedChoice(destinationInput);
+  const credentials = getCurrentUserCredentials();
+  if (!originChoice || !destinationChoice || !credentials) {
+    showStatus('Debes iniciar sesion para guardar favoritos.', true);
+    return;
+  }
+  const existing = findFavoriteBySlugs(originChoice.slug, destinationChoice.slug);
+  try {
+    if (existing) {
+      await removeFavorite(existing.idFavorito, credentials);
+    } else {
+      await saveFavorite({
+        usuario: credentials.usuario,
+        contrasenia: credentials.contrasenia,
+        origin_slug: originChoice.slug,
+        destination_slug: destinationChoice.slug,
+        origin_label: originChoice.label,
+        destination_label: destinationChoice.label,
+      });
+    }
+    await refreshFavorites();
+  } catch (error) {
+    console.warn('No se pudo actualizar el favorito', error);
+    showStatus('No se pudo actualizar el favorito seleccionado.', true);
+  }
+}
+
+function updateFavoriteControl() {
+  if (!favoriteButton) return;
+  favoriteButton.hidden = !isAuthenticated;
+  if (!isAuthenticated) {
+    favoriteButton.classList.remove('is-active');
+    favoriteButton.disabled = true;
+    favoriteButton.setAttribute('aria-pressed', 'false');
+    favoriteButton.title = 'Inicia sesion para guardar favoritos';
+    return;
+  }
+  const originChoice = getSelectedChoice(originInput);
+  const destinationChoice = getSelectedChoice(destinationInput);
+  const credentials = getCurrentUserCredentials();
+  const canUseFavorite = Boolean(isAuthenticated && originChoice && destinationChoice && credentials);
+  favoriteButton.disabled = !canUseFavorite;
+  const isActive = canUseFavorite
+    ? Boolean(findFavoriteBySlugs(originChoice.slug, destinationChoice.slug))
+    : false;
+  favoriteButton.classList.toggle('is-active', isActive);
+  favoriteButton.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+  favoriteButton.title = isActive ? 'Eliminar de favoritos' : 'Guardar trayecto en favoritos';
+}
+
 async function loadSchedules(force = false) {
   if (!force && scheduleMap.size) return;
   showStatus('Cargando horarios actualizados...');
@@ -279,6 +457,10 @@ function handleWhenChange() {
 
 function handleFormSubmit(event) {
   event.preventDefault();
+  executePlannerQuery('form');
+}
+
+function executePlannerQuery(triggerSource = 'manual') {
   const originChoice = getSelectedChoice(originInput);
   const destinationChoice = getSelectedChoice(destinationInput);
 
@@ -314,13 +496,17 @@ function handleFormSubmit(event) {
   const scheduleStopId = schedule.stopId || trip.origin.id;
 
   const baseMinutes = baseTime.getHours() * 60 + baseTime.getMinutes();
-  const upcoming = getNextDepartures(schedule.horas, baseMinutes);
-  if (!upcoming.length) {
-    showStatus('No quedan salidas publicadas para la hora indicada.', true);
+  const { upcoming: upcomingTimes, sortedMinutes } = getNextDepartures(schedule.horas, baseMinutes);
+  if (!upcomingTimes.length) {
+    if (sortedMinutes.length) {
+      renderNoTripsMessage(sortedMinutes[0]);
+    } else {
+      showStatus('No quedan salidas publicadas para la hora indicada.', true);
+    }
     return;
   }
 
-  const nextDeparture = upcoming[0];
+  const nextDeparture = upcomingTimes[0];
   const diffMinutes = Math.max(toMinutes(nextDeparture) - baseMinutes, 0);
   const travelMinutes = estimateTravelMinutes(trip);
   const waitMinutes = diffMinutes + calculateDepartureOffset(trip, scheduleStopId);
@@ -332,7 +518,7 @@ function handleFormSubmit(event) {
     diffMinutes,
     travelMinutes,
     waitMinutes,
-    upcoming: upcoming.slice(1),
+    upcoming: upcomingTimes.slice(1),
     scheduleType: schedule.tipoDia,
     referenceTime: baseTime,
     pathIds: trip.pathIds,
@@ -424,6 +610,7 @@ function swapStops() {
   setInputChoice(destinationInput, destinationOptions, originSlug);
   handleOriginInput();
   handleDestinationInput();
+  updateFavoriteControl();
 }
 
 function setInputChoice(inputEl, datalistEl, slug) {
@@ -476,12 +663,19 @@ function getDayType(date) {
 }
 
 function getNextDepartures(hours = [], baseMinutes, amount = 3) {
-  const sorted = hours
+  const sortedMinutes = sortScheduleMinutes(hours);
+  const upcoming = sortedMinutes.filter((minutes) => minutes >= baseMinutes);
+  return {
+    upcoming: upcoming.slice(0, amount).map(formatMinutes),
+    sortedMinutes,
+  };
+}
+
+function sortScheduleMinutes(hours = []) {
+  return hours
     .map((timeStr) => toMinutes(timeStr))
     .filter((minutes) => !Number.isNaN(minutes))
     .sort((a, b) => a - b);
-  const upcoming = sorted.filter((minutes) => minutes >= baseMinutes);
-  return upcoming.slice(0, amount).map(formatMinutes);
 }
 
 function toMinutes(timeStr) {
@@ -664,6 +858,19 @@ function showStatus(message, isError = false) {
   resultsPanel.innerHTML = `<div class="${isError ? 'error-message' : 'loading'}">${message}</div>`;
 }
 
+function renderNoTripsMessage(nextAvailableMinutes) {
+  const nextLabel = Number.isFinite(nextAvailableMinutes) ? formatMinutes(nextAvailableMinutes) : null;
+  const extra = nextLabel
+    ? `<p class="next-available">Primera salida del siguiente turno: <strong>${nextLabel}</strong></p>`
+    : '';
+  resultsPanel.innerHTML = `
+    <div class="error-message">
+      <p>No quedan salidas publicadas para la hora indicada.</p>
+      ${extra}
+    </div>
+  `;
+}
+
 function showEmptyState() {
   resultsPanel.innerHTML = `
     <div class="empty-state">
@@ -671,6 +878,80 @@ function showEmptyState() {
       <p>Selecciona parada de origen y destino para ver los proximos servicios disponibles.</p>
     </div>
   `;
+}
+
+function renderFavoritePanel() {
+  if (!favoritesListEl) return;
+  if (!isAuthenticated) {
+    favoritesListEl.innerHTML = '<p class="favorites-empty">Inicia sesion para gestionar tus trayectos favoritos.</p>';
+    return;
+  }
+  if (!favoriteTrips.length) {
+    favoritesListEl.innerHTML = '<p class="favorites-empty">Aun no tienes trayectos guardados.</p>';
+    return;
+  }
+  favoritesListEl.innerHTML = favoriteTrips
+    .map(
+      (fav) => `
+        <article class="favorite-item">
+          <div class="favorite-item__title">
+            <span>${fav.origin_label}</span>
+            <span>→</span>
+            <span>${fav.destination_label}</span>
+          </div>
+          <div class="favorite-item__actions">
+            <button type="button" data-action="apply" data-favorite-id="${fav.idFavorito}" data-origin="${fav.origin_slug}" data-destination="${fav.destination_slug}">Cargar</button>
+            <button type="button" data-action="remove" data-favorite-id="${fav.idFavorito}">Eliminar</button>
+          </div>
+        </article>
+      `,
+    )
+    .join('');
+}
+
+function findFavoriteBySlugs(originSlug, destinationSlug) {
+  return favoriteTrips.find(
+    (fav) => fav.origin_slug === originSlug && fav.destination_slug === destinationSlug,
+  );
+}
+
+async function saveFavorite(payload) {
+  const response = await fetch(`${API_BASE_URL}/favoritos`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+}
+
+async function removeFavorite(favoriteId, credentials) {
+  if (!favoriteId) return;
+  const params = new URLSearchParams({
+    usuario: credentials.usuario,
+    contrasenia: credentials.contrasenia,
+  });
+  const response = await fetch(`${API_BASE_URL}/favoritos/${favoriteId}?${params.toString()}`, {
+    method: 'DELETE',
+  });
+  if (!response.ok && response.status !== 404) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+}
+
+function getCurrentUserCredentials() {
+  if (window.EtxebusSession && typeof window.EtxebusSession.getUser === 'function') {
+    const user = window.EtxebusSession.getUser();
+    if (user) return user;
+  }
+  try {
+    const raw = window.localStorage.getItem('etxebusUser');
+    return raw ? JSON.parse(raw) : null;
+  } catch (error) {
+    console.warn('No se pudo leer el usuario almacenado', error);
+    return null;
+  }
 }
 
 function buildRouteTimeline(pathIds, origin, destination) {
@@ -783,6 +1064,21 @@ function buildCanonicalIndexMap() {
   return result;
 }
 
+window.addEventListener('storage', (event) => {
+  if (event.key === SESSION_STORAGE_KEY) {
+    isAuthenticated = isUserLoggedIn();
+    if (!isAuthenticated) {
+      favoriteTrips = [];
+      renderFavoritePanel();
+      if (favoritesPanel) {
+        favoritesPanel.setAttribute('hidden', '');
+      }
+    }
+    updateFavoriteControl();
+    refreshFavorites();
+  }
+});
+
 function isBetterPathCandidate(candidate, current) {
   if (!candidate) return false;
   if (!current) return true;
@@ -864,4 +1160,11 @@ function getCanonicalSegment(group, startId, endId, direction) {
     return slice.reverse();
   }
   return null;
+}
+
+function isUserLoggedIn() {
+  if (window.EtxebusSession && typeof window.EtxebusSession.isLoggedIn === 'function') {
+    return window.EtxebusSession.isLoggedIn();
+  }
+  return window.localStorage.getItem(SESSION_STORAGE_KEY) === 'authenticated';
 }

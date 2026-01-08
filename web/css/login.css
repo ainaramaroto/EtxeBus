@@ -255,6 +255,22 @@ body {
   text-align: center;
 }
 
+.ghost-link {
+  margin: 0.45rem 0 0;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-decoration: underline;
+  align-self: center;
+  transition: color 0.2s ease;
+}
+
+.ghost-link:hover {
+  color: #ffffff;
+}
+
 @media (max-width: 480px) {
   .login-card {
     padding: 80px 24px 88px;

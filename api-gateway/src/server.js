@@ -11,7 +11,8 @@ const app = express();
 
 const corsOptions = {
   origin: (origin, callback) => {
-    if (!origin) return callback(null, true); // permite clientes sin header Origin (ej. file://)
+    const isNullOrigin = origin === 'null';
+    if (!origin || isNullOrigin) return callback(null, true); // file:// o iframes sin origen
     if (!config.allowedOrigins.length) return callback(null, true);
     if (config.allowedOrigins.includes(origin)) return callback(null, true);
     return callback(new Error(`Origen no permitido: ${origin}`));

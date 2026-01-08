@@ -20,8 +20,8 @@
       <a class="nav-link" href="horarios.html">Horarios</a>
       <a class="nav-link active" href="trayecto.html">Trayecto</a>
     </nav>
-    <div class="header-actions">
-      <button class="header-icon" type="button" aria-label="Favoritos">
+    <div class="header-actions" data-auth-role="auth-controls" hidden>
+      <button class="header-icon" type="button" aria-label="Favoritos" id="header-favorites-button">
         <svg viewBox="0 0 24 24"><path d="M12 3l2.5 4.9 5.4.8-3.9 3.8.9 5.6L12 15.8 7.1 18.1l.9-5.6-3.9-3.8 5.4-.8z"/></svg>
       </button>
       <button class="header-icon" type="button" aria-label="Perfil">
@@ -77,6 +77,20 @@
             </div>
           </div>
           <div class="form-actions">
+            <button
+              type="button"
+              id="favorite-button"
+              class="favorite-btn"
+              aria-pressed="false"
+              aria-label="Guardar trayecto en favoritos"
+              title="Guardar trayecto en favoritos"
+              data-auth-role="favorites"
+              hidden
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 3l2.5 4.9 5.4.8-3.9 3.8.9 5.6L12 15.8 7.1 18.1l.9-5.6-3.9-3.8 5.4-.8z" />
+              </svg>
+            </button>
             <button type="submit" class="submit-btn">Consultar</button>
           </div>
         </div>
@@ -109,8 +123,22 @@
         <p>Selecciona parada de origen y destino para ver los proximos servicios disponibles.</p>
       </div>
     </section>
+
+    <section class="favorites-panel" id="favorites-panel" aria-label="Trayectos favoritos" hidden>
+      <div class="favorites-panel__header">
+        <div>
+          <p class="section-label">Favoritos</p>
+          <h3>Tus trayectos guardados</h3>
+        </div>
+        <button type="button" class="favorites-panel__close" id="favorites-close" aria-label="Cerrar lista de favoritos">&times;</button>
+      </div>
+      <div id="favorites-list" class="favorites-panel__body">
+        <p class="favorites-empty">Inicia sesi&oacute;n para guardar tus trayectos.</p>
+      </div>
+    </section>
   </main>
 
+  <script src="../js/session.js"></script>
   <script src="../js/trayecto.js"></script>
 </body>
 </html>

@@ -103,3 +103,25 @@ class ExternalScheduleSnapshot(Base):
     slug: Mapped[str] = mapped_column(String(64), primary_key=True)
     payload: Mapped[list[dict]] = mapped_column(JSON)
     fetched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class FavoriteTrip(Base):
+    __tablename__ = "favorito_trayecto"
+    __table_args__ = (
+        UniqueConstraint(
+            "usuario",
+            "contrasenia",
+            "origin_slug",
+            "destination_slug",
+            name="uq_favorito_usuario_trayecto",
+        ),
+    )
+
+    idFavorito: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    usuario: Mapped[str] = mapped_column(String(50))
+    contrasenia: Mapped[str] = mapped_column(String(50))
+    origin_slug: Mapped[str] = mapped_column(String(80))
+    destination_slug: Mapped[str] = mapped_column(String(80))
+    origin_label: Mapped[str] = mapped_column(String(120))
+    destination_label: Mapped[str] = mapped_column(String(120))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

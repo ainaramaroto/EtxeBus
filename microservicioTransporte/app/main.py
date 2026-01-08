@@ -6,7 +6,7 @@ from fastapi import FastAPI
 
 from .config import get_settings
 from .database import SessionLocal, init_db
-from .routers import lines, stops, routes, route_stops, schedules
+from .routers import lines, stops, routes, route_stops, schedules, favorites
 from .services.external_schedule import ExternalScheduleError, get_external_card_blocks
 
 settings = get_settings()
@@ -36,3 +36,4 @@ app.include_router(stops.router)
 app.include_router(routes.router)
 app.include_router(route_stops.router)
 app.include_router(schedules.router)
+app.include_router(favorites.router)

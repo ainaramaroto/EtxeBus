@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from decimal import Decimal
+from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, constr
 
 
 class LineBase(BaseModel):
@@ -159,5 +160,24 @@ class PublishedSchedule(BaseModel):
     orden: int
     blocks: list[ScheduleBlock]
     line_id: int | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class FavoriteTripBase(BaseModel):
+    usuario: constr(strip_whitespace=True, min_length=1, max_length=50)
+    contrasenia: constr(strip_whitespace=True, min_length=1, max_length=50)
+
+
+class FavoriteTripCreate(FavoriteTripBase):
+    origin_slug: constr(strip_whitespace=True, min_length=1, max_length=80)
+    destination_slug: constr(strip_whitespace=True, min_length=1, max_length=80)
+    origin_label: constr(strip_whitespace=True, min_length=1, max_length=120)
+    destination_label: constr(strip_whitespace=True, min_length=1, max_length=120)
+
+
+class FavoriteTrip(FavoriteTripCreate):
+    idFavorito: int
+    created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
