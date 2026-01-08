@@ -37,7 +37,12 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    const usuario = new Usuario(req.body);
+    let usuario;
+    try {
+      usuario = new Usuario(req.body);
+    } catch (error) {
+      throw httpError(400, error.message);
+    }
     const documento = usuario.toObject(true);
 
     try {
@@ -67,7 +72,7 @@ router.put(
     }
 
     const usuario = Usuario.fromObject(existente.toObject());
-    const { nomUsuario, email, telf, contrasenia } = req.body || {};
+    const { nomUsuario, email, contrasenia } = req.body || {};
 
     if (nomUsuario !== undefined) {
       if (!Usuario.validarNomUsuario(nomUsuario)) {
@@ -83,20 +88,12 @@ router.put(
       usuario.email = email.trim();
     }
 
-    if (telf !== undefined) {
-      if (!Usuario.validarTelf(telf)) {
-        throw httpError(400, 'telf invalido');
-      }
-      usuario.telf = telf !== null ? String(telf).trim() : null;
-    }
-
     if (contrasenia !== undefined) {
       usuario.setContrasenia(contrasenia);
     }
 
     existente.nomUsuario = usuario.nomUsuario;
     existente.email = usuario.email;
-    existente.telf = usuario.telf;
     existente.contrasenia = usuario.contrasenia;
 
     try {

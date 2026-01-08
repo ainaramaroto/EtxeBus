@@ -299,7 +299,7 @@ async function refreshFavorites() {
     return;
   }
   const credentials = getCurrentUserCredentials();
-  if (!credentials || !credentials.usuario || !credentials.contrasenia) {
+  if (!credentials || !credentials.idUsuario) {
     favoriteTrips = [];
     renderFavoritePanel();
     updateFavoriteControl();
@@ -307,8 +307,7 @@ async function refreshFavorites() {
   }
   try {
     const params = new URLSearchParams({
-      usuario: credentials.usuario,
-      contrasenia: credentials.contrasenia,
+      idUsuario: credentials.idUsuario,
     });
     const response = await fetch(`${API_BASE_URL}/favoritos?${params.toString()}`);
     if (!response.ok) {
@@ -355,7 +354,7 @@ async function handleFavoritesListClick(event) {
   }
   if (action === 'remove') {
     const credentials = getCurrentUserCredentials();
-    if (!credentials) return;
+    if (!credentials || !credentials.idUsuario) return;
     try {
       await removeFavorite(favoriteId, credentials);
       await refreshFavorites();
@@ -378,7 +377,7 @@ async function handleFavoriteClick() {
   const originChoice = getSelectedChoice(originInput);
   const destinationChoice = getSelectedChoice(destinationInput);
   const credentials = getCurrentUserCredentials();
-  if (!originChoice || !destinationChoice || !credentials) {
+  if (!originChoice || !destinationChoice || !credentials || !credentials.idUsuario) {
     showStatus('Debes iniciar sesion para guardar favoritos.', true);
     return;
   }
@@ -388,8 +387,8 @@ async function handleFavoriteClick() {
       await removeFavorite(existing.idFavorito, credentials);
     } else {
       await saveFavorite({
-        usuario: credentials.usuario,
-        contrasenia: credentials.contrasenia,
+        idUsuario: credentials.idUsuario,
+        tipo: 'trayecto',
         origin_slug: originChoice.slug,
         destination_slug: destinationChoice.slug,
         origin_label: originChoice.label,
@@ -416,7 +415,9 @@ function updateFavoriteControl() {
   const originChoice = getSelectedChoice(originInput);
   const destinationChoice = getSelectedChoice(destinationInput);
   const credentials = getCurrentUserCredentials();
-  const canUseFavorite = Boolean(isAuthenticated && originChoice && destinationChoice && credentials);
+  const canUseFavorite = Boolean(
+    isAuthenticated && originChoice && destinationChoice && credentials && credentials.idUsuario,
+  );
   favoriteButton.disabled = !canUseFavorite;
   const isActive = canUseFavorite
     ? Boolean(findFavoriteBySlugs(originChoice.slug, destinationChoice.slug))
@@ -996,8 +997,7 @@ async function saveFavorite(payload) {
 async function removeFavorite(favoriteId, credentials) {
   if (!favoriteId) return;
   const params = new URLSearchParams({
-    usuario: credentials.usuario,
-    contrasenia: credentials.contrasenia,
+    idUsuario: credentials.idUsuario,
   });
   const response = await fetch(`${API_BASE_URL}/favoritos/${favoriteId}?${params.toString()}`, {
     method: 'DELETE',
@@ -1008,13 +1008,24 @@ async function removeFavorite(favoriteId, credentials) {
 }
 
 function getCurrentUserCredentials() {
+  const normalize = (user) => {
+    if (!user || typeof user !== 'object') return null;
+    const id = Number(user.idUsuario ?? user.id);
+    if (!Number.isFinite(id)) return null;
+    return {
+      idUsuario: id,
+      nomUsuario: user.nomUsuario || '',
+      email: user.email || '',
+    };
+  };
+
   if (window.EtxebusSession && typeof window.EtxebusSession.getUser === 'function') {
-    const user = window.EtxebusSession.getUser();
+    const user = normalize(window.EtxebusSession.getUser());
     if (user) return user;
   }
   try {
     const raw = window.localStorage.getItem('etxebusUser');
-    return raw ? JSON.parse(raw) : null;
+    return raw ? normalize(JSON.parse(raw)) : null;
   } catch (error) {
     console.warn('No se pudo leer el usuario almacenado', error);
     return null;

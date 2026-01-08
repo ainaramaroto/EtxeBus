@@ -25,11 +25,6 @@ const UsuarioSchema = new mongoose.Schema(
       trim: true,
       lowercase: true,
     },
-    telf: {
-      type: String,
-      maxlength: 15,
-      trim: true,
-    },
     createdAt: {
       type: String,
     },

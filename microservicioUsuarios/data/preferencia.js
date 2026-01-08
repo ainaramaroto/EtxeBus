@@ -1,71 +1,103 @@
-const crypto = require('crypto');
-
 class Preferencia {
-    /**
-     * @param {Object} opts
-     * @param {string} [opts.idPreferencia] - id interno (si no se pasa se genera)
-     * @param {number|string} opts.idUsuario - id del usuario (requerido)
-     * @param {number|string} [opts.idParada] - id de la parada (opcional)
-     * @param {number|string} [opts.idTrayecto] - id del trayecto (opcional)
-     * @param {string} opts.tipo - tipo de preferencia (requerido, max 10 chars)
-     */
-    constructor({ idPreferencia = null, idUsuario, idParada = null, idTrayecto = null, tipo } = {}) {
-        if (!idUsuario) throw new Error('idUsuario requerido');
-        if (!tipo) throw new Error('tipo requerido');
-        if (!Preferencia.validarTipo(tipo)) throw new Error('tipo inválido');
-
-        this.idPreferencia = idPreferencia || Preferencia.generarId();
-        this.idUsuario = idUsuario;
-        this.idParada = idParada;
-        this.idTrayecto = idTrayecto;
-        this.tipo = String(tipo);
-        this.createdAt = new Date().toISOString();
+  /**
+   * @param {Object} opts
+   * @param {number|string} [opts.idPreferencia]
+   * @param {number|string} opts.idUsuario
+   * @param {string} opts.tipo
+   * @param {string|null} [opts.origin_slug]
+   * @param {string|null} [opts.destination_slug]
+   * @param {string|null} [opts.origin_label]
+   * @param {string|null} [opts.destination_label]
+   */
+  constructor({
+    idPreferencia = null,
+    idUsuario,
+    tipo,
+    origin_slug = null,
+    destination_slug = null,
+    origin_label = null,
+    destination_label = null,
+  } = {}) {
+    if (idUsuario === undefined || idUsuario === null) {
+      throw new Error('idUsuario requerido');
+    }
+    if (!tipo) {
+      throw new Error('tipo requerido');
+    }
+    if (!Preferencia.validarTipo(tipo)) {
+      throw new Error('tipo invalido');
     }
 
-    static generarId() {
-        if (typeof crypto.randomUUID === 'function') return crypto.randomUUID();
-        return `${Date.now().toString(36)}-${crypto.randomBytes(6).toString('hex')}`;
+    const parsedUsuario = Number(idUsuario);
+    if (!Number.isFinite(parsedUsuario)) {
+      throw new Error('idUsuario invalido');
     }
 
-    /**
-     * Valida que el tipo sea una cadena no vacía y de longitud <= 10
-     * (coincide con el esquema mostrado en la imagen)
-     */
-    static validarTipo(tipo) {
-        if (typeof tipo !== 'string') return false;
-        const t = tipo.trim();
-        return t.length > 0 && t.length <= 10;
-    }
+    this.idPreferencia =
+      idPreferencia !== null && idPreferencia !== undefined
+        ? Number(idPreferencia)
+        : Preferencia.generarIdNumerico();
+    this.idUsuario = parsedUsuario;
+    this.tipo = String(tipo).trim();
+    this.origin_slug = Preferencia.parseNullableString(origin_slug, 120);
+    this.destination_slug = Preferencia.parseNullableString(destination_slug, 120);
+    this.origin_label = Preferencia.parseNullableString(origin_label, 120);
+    this.destination_label = Preferencia.parseNullableString(destination_label, 120);
+    this.createdAt = new Date().toISOString();
+  }
 
-    toObject() {
-        return {
-            idPreferencia: this.idPreferencia,
-            idUsuario: this.idUsuario,
-            idParada: this.idParada,
-            idTrayecto: this.idTrayecto,
-            tipo: this.tipo,
-            createdAt: this.createdAt
-        };
-    }
+  static generarIdNumerico() {
+    const base = Number(String(Date.now()).slice(-9));
+    const rand = Math.floor(Math.random() * 90) + 10;
+    return base * 100 + rand;
+  }
 
-    toJSON() {
-        // mismo que toObject pero pensado para JSON.stringify
-        return this.toObject();
+  static parseNullableString(value, maxLength) {
+    if (value === null || value === undefined) return null;
+    const trimmed = String(value).trim();
+    if (!trimmed.length) return null;
+    if (maxLength && trimmed.length > maxLength) {
+      return trimmed.slice(0, maxLength);
     }
+    return trimmed;
+  }
 
-    /**
-     * Crea una Preferencia a partir de un objeto plano (por ejemplo leído de BD)
-     */
-    static fromObject(obj = {}) {
-        if (!obj) throw new Error('obj requerido');
-        return new Preferencia({
-            idPreferencia: obj.idPreferencia || obj.id || null,
-            idUsuario: obj.idUsuario || obj.idUsuario === 0 ? obj.idUsuario : obj.idUsuario,
-            idParada: obj.idParada !== undefined ? obj.idParada : null,
-            idTrayecto: obj.idTrayecto !== undefined ? obj.idTrayecto : null,
-            tipo: obj.tipo
-        });
-    }
+  static validarTipo(tipo) {
+    if (typeof tipo !== 'string') return false;
+    const t = tipo.trim();
+    return t.length > 0 && t.length <= 10;
+  }
+
+  toObject() {
+    return {
+      idPreferencia: this.idPreferencia,
+      idFavorito: this.idPreferencia,
+      idUsuario: this.idUsuario,
+      tipo: this.tipo,
+      origin_slug: this.origin_slug,
+      destination_slug: this.destination_slug,
+      origin_label: this.origin_label,
+      destination_label: this.destination_label,
+      createdAt: this.createdAt,
+    };
+  }
+
+  toJSON() {
+    return this.toObject();
+  }
+
+  static fromObject(obj = {}) {
+    if (!obj) throw new Error('obj requerido');
+    return new Preferencia({
+      idPreferencia: obj.idPreferencia ?? obj.idFavorito ?? obj.id ?? null,
+      idUsuario: obj.idUsuario,
+      tipo: obj.tipo,
+      origin_slug: obj.origin_slug ?? null,
+      destination_slug: obj.destination_slug ?? null,
+      origin_label: obj.origin_label ?? null,
+      destination_label: obj.destination_label ?? null,
+    });
+  }
 }
 
 module.exports = Preferencia;

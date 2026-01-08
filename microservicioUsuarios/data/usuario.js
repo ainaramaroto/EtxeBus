@@ -7,9 +7,8 @@ class Usuario {
      * @param {string} opts.nomUsuario
      * @param {string} opts.contrasenia
      * @param {string} opts.email
-     * @param {string|null} [opts.telf]
      */
-    constructor({ idUsuario = null, nomUsuario, contrasenia, email, telf = null } = {}) {
+    constructor({ idUsuario = null, nomUsuario, contrasenia, email } = {}) {
         if (!nomUsuario) throw new Error('nomUsuario requerido');
         if (!contrasenia) throw new Error('contrasenia requerida');
         if (!email) throw new Error('email requerido');
@@ -17,13 +16,11 @@ class Usuario {
         if (!Usuario.validarNomUsuario(nomUsuario)) throw new Error('nomUsuario invalido (max 25 caracteres)');
         if (!Usuario.validarContrasenia(contrasenia)) throw new Error('contrasenia invalida (6-15 caracteres)');
         if (!Usuario.validarEmail(email)) throw new Error('email invalido');
-        if (telf !== null && !Usuario.validarTelf(telf)) throw new Error('telf invalido (max 15 caracteres)');
 
         this.idUsuario = idUsuario != null ? Number(idUsuario) : Usuario.generarIdNumerico();
         this.nomUsuario = String(nomUsuario).trim();
         this.contrasenia = Usuario.hashContrasenia(contrasenia);
         this.email = String(email).trim();
-        this.telf = telf !== null ? String(telf).trim() : null;
         this.createdAt = new Date().toISOString();
     }
 
@@ -66,19 +63,11 @@ class Usuario {
         return s.length >= 6 && s.length <= 15;
     }
 
-    static validarTelf(t) {
-        if (t === null || t === undefined) return true;
-        if (typeof t !== 'string') return false;
-        const s = t.trim();
-        return s.length > 0 && s.length <= 15;
-    }
-
     toObject(includeContrasenia = false) {
         const base = {
             idUsuario: this.idUsuario,
             nomUsuario: this.nomUsuario,
             email: this.email,
-            telf: this.telf,
             createdAt: this.createdAt,
         };
         if (includeContrasenia) base.contrasenia = this.contrasenia;
@@ -95,7 +84,6 @@ class Usuario {
         const id = obj.idUsuario != null ? obj.idUsuario : (obj.id != null ? obj.id : null);
         const nom = obj.nomUsuario || obj.nom || obj.username;
         const email = obj.email;
-        const telf = obj.telf !== undefined ? obj.telf : (obj.telefono || null);
 
         const rawPassword = obj.contrasenia || obj.password || '';
         const isHash = /^[a-f0-9]{64}$/i.test(String(rawPassword));
@@ -106,7 +94,6 @@ class Usuario {
             nomUsuario: nom,
             contrasenia: contraseniaBase,
             email,
-            telf,
         });
 
         if (isHash) {

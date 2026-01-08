@@ -19,7 +19,6 @@ const usuarioPayload = {
   nomUsuario: `usuario_${randomSuffix}`,
   email: `usuario.${randomSuffix}@etxebus.test`,
   contrasenia: 'Temporal123',
-  telf: process.env.TEST_USER_PHONE || '600123123',
 };
 
 async function main() {

@@ -22,10 +22,31 @@
     });
   }
 
+  function sanitizeUser(user) {
+    if (!user || typeof user !== 'object') return null;
+    const id =
+      user.idUsuario ??
+      user.id_usuario ??
+      user.id ??
+      null;
+    const parsedId = Number(id);
+    if (!Number.isFinite(parsedId)) {
+      return null;
+    }
+    const nom = user.nomUsuario || user.nombre || user.username || '';
+    const email = user.email || user.usuario || '';
+    return {
+      idUsuario: parsedId,
+      nomUsuario: String(nom || '').trim(),
+      email: String(email || '').trim(),
+    };
+  }
+
   function getStoredUser() {
     try {
       const raw = window.localStorage.getItem(USER_KEY);
-      return raw ? JSON.parse(raw) : null;
+      if (!raw) return null;
+      return sanitizeUser(JSON.parse(raw));
     } catch (error) {
       console.warn('No se pudo leer el usuario activo:', error);
       return null;
@@ -33,14 +54,9 @@
   }
 
   function setStoredUser(user) {
-    if (user && user.usuario) {
-      window.localStorage.setItem(
-        USER_KEY,
-        JSON.stringify({
-          usuario: user.usuario,
-          contrasenia: user.contrasenia || '',
-        }),
-      );
+    const sanitized = sanitizeUser(user);
+    if (sanitized) {
+      window.localStorage.setItem(USER_KEY, JSON.stringify(sanitized));
     } else {
       window.localStorage.removeItem(USER_KEY);
     }

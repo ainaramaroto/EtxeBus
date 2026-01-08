@@ -9,27 +9,35 @@ const router = express.Router();
 router.post(
   '/login',
   asyncHandler(async (req, res) => {
-    const { email, contrasenia } = req.body || {};
+    const { email, usuario, nomUsuario, contrasenia } = req.body || {};
 
-    if (!email || !contrasenia) {
-      throw httpError(400, 'email y contrasenia son requeridos');
+    const identifierInput = email ?? usuario ?? nomUsuario ?? '';
+    const identifier = String(identifierInput).trim();
+
+    if (!identifier || !contrasenia) {
+      throw httpError(400, 'identificador y contrasenia son requeridos');
     }
 
-    const encontrado = await UsuarioModel.findOne({
-      email: String(email).trim().toLowerCase(),
-    }).lean();
+    const shouldUseEmail =
+      Boolean(email) || (!usuario && !nomUsuario && identifier.includes('@'));
+
+    const query = shouldUseEmail
+      ? { email: identifier.toLowerCase() }
+      : { nomUsuario: identifier };
+
+    const encontrado = await UsuarioModel.findOne(query).lean();
 
     if (!encontrado) {
       throw httpError(401, 'Credenciales invalidas');
     }
 
-    const usuario = Usuario.fromObject(encontrado);
+    const usuarioEncontrado = Usuario.fromObject(encontrado);
 
-    if (!usuario.verificarContrasenia(contrasenia)) {
+    if (!usuarioEncontrado.verificarContrasenia(contrasenia)) {
       throw httpError(401, 'Credenciales invalidas');
     }
 
-    res.json({ data: usuario.toJSON() });
+    res.json({ data: usuarioEncontrado.toJSON() });
   })
 );
 

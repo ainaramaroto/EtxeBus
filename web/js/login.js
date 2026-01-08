@@ -1,3 +1,5 @@
+const API_BASE_URL = window.ETXEBUS_API_BASE || 'http://localhost:4000/api';
+
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('login-form');
   const registerButton = document.getElementById('register-button');
@@ -5,14 +7,25 @@ document.addEventListener('DOMContentLoaded', () => {
   const emailInput = document.getElementById('login-email');
   const passwordInput = document.getElementById('login-password');
   const toggleButtons = document.querySelectorAll('[data-password-toggle]');
+  const errorBox = document.getElementById('login-error');
 
-  function persistLogin(credentials) {
+  function showError(message) {
+    if (!errorBox) return;
+    errorBox.textContent = message || '';
+  }
+
+  function persistLogin(user) {
+    const payload = {
+      idUsuario: user.idUsuario,
+      nomUsuario: user.nomUsuario,
+      email: user.email,
+    };
     if (window.EtxebusSession) {
-      window.EtxebusSession.setUser(credentials);
+      window.EtxebusSession.setUser(payload);
       window.EtxebusSession.setLoggedIn(true);
     } else {
       window.localStorage.setItem('etxebusSession', 'authenticated');
-      window.localStorage.setItem('etxebusUser', JSON.stringify(credentials));
+      window.localStorage.setItem('etxebusUser', JSON.stringify(payload));
     }
   }
 
@@ -26,15 +39,55 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  async function authenticate(identifier, contrasenia) {
+    const normalized = String(identifier || '').trim();
+    const payload = { contrasenia };
+    if (normalized.includes('@')) {
+      payload.email = normalized.toLowerCase();
+    } else {
+      payload.usuario = normalized;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/usuarios/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    let responseBody = null;
+    try {
+      responseBody = await response.json();
+    } catch (error) {
+      responseBody = null;
+    }
+    if (!response.ok) {
+      const fallback =
+        response.status === 401 ? 'Credenciales invalidas' : `HTTP ${response.status}`;
+      throw new Error(responseBody?.message || fallback);
+    }
+    return responseBody?.data || null;
+  }
+
   if (form) {
-    form.addEventListener('submit', (event) => {
+    form.addEventListener('submit', async (event) => {
       event.preventDefault();
-      const credentials = {
-        usuario: emailInput?.value?.trim() || 'invitado',
-        contrasenia: passwordInput?.value || '',
-      };
-      persistLogin(credentials);
-      window.location.href = 'principal.html';
+      showError('');
+      const identifier = emailInput?.value?.trim();
+      const contrasenia = passwordInput?.value || '';
+      if (!identifier || !contrasenia) {
+        showError('Debes completar tu usuario/email y contrasena.');
+        return;
+      }
+      try {
+        const user = await authenticate(identifier, contrasenia);
+        if (!user || !user.idUsuario) {
+          throw new Error('Respuesta invalida del servidor');
+        }
+        persistLogin(user);
+        window.location.href = 'principal.html';
+      } catch (error) {
+        console.warn('Fallo el inicio de sesion:', error);
+        showError(error.message || 'No se pudo iniciar sesion');
+      }
     });
   }
 

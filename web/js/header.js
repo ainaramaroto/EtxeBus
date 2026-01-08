@@ -142,15 +142,14 @@
       return;
     }
     const credentials = getCurrentUserCredentials();
-    if (!credentials) {
+    if (!credentials || !credentials.idUsuario) {
       favorites = [];
       renderOverlay();
       return;
     }
     try {
       const params = new URLSearchParams({
-        usuario: credentials.usuario,
-        contrasenia: credentials.contrasenia,
+        idUsuario: credentials.idUsuario,
       });
       const response = await fetch(`${API_BASE_URL}/favoritos?${params.toString()}`);
       if (!response.ok) {
@@ -219,11 +218,10 @@
   async function removeFavorite(favoriteId) {
     if (!favoriteId) return;
     const credentials = getCurrentUserCredentials();
-    if (!credentials) return;
+    if (!credentials || !credentials.idUsuario) return;
     try {
       const params = new URLSearchParams({
-        usuario: credentials.usuario,
-        contrasenia: credentials.contrasenia,
+        idUsuario: credentials.idUsuario,
       });
       const response = await fetch(
         `${API_BASE_URL}/favoritos/${favoriteId}?${params.toString()}`,
@@ -255,12 +253,23 @@
   }
 
   function getCurrentUserCredentials() {
+    const normalize = (user) => {
+      if (!user || typeof user !== 'object') return null;
+      const id = Number(user.idUsuario ?? user.id);
+      if (!Number.isFinite(id)) return null;
+      return {
+        idUsuario: id,
+        nomUsuario: user.nomUsuario || '',
+        email: user.email || '',
+      };
+    };
+
     if (window.EtxebusSession && typeof window.EtxebusSession.getUser === 'function') {
-      return window.EtxebusSession.getUser();
+      return normalize(window.EtxebusSession.getUser());
     }
     try {
       const raw = window.localStorage.getItem('etxebusUser');
-      return raw ? JSON.parse(raw) : null;
+      return raw ? normalize(JSON.parse(raw)) : null;
     } catch (error) {
       console.warn('No se pudo leer el usuario almacenado', error);
       return null;

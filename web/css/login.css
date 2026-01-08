@@ -255,6 +255,18 @@ body {
   text-align: center;
 }
 
+.login-error {
+  min-height: 20px;
+  margin-top: 10px;
+  font-size: 0.9rem;
+  text-align: center;
+  color: #ffd8d8;
+}
+
+.login-error.is-success {
+  color: #d3ffd8;
+}
+
 .ghost-link {
   margin: 0.45rem 0 0;
   background: transparent;
