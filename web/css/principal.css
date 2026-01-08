@@ -63,6 +63,40 @@ body {
   gap: 16px;
 }
 
+.header-zone {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-left: auto;
+}
+
+.header-login-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  border-radius: 18px;
+  text-decoration: none;
+  color: #ffffff;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  box-shadow: 0 12px 26px rgba(8, 26, 48, 0.2);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.header-login-link:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+  box-shadow: 0 16px 32px rgba(8, 26, 48, 0.24);
+}
+
+.header-login-link:focus-visible {
+  outline: 3px solid rgba(255, 255, 255, 0.6);
+  outline-offset: 3px;
+}
+
 .header-icon {
   width: 48px;
   height: 48px;
@@ -254,6 +288,11 @@ body {
     gap: 16px;
     padding: 20px 24px;
     text-align: center;
+  }
+
+  .header-zone {
+    justify-content: center;
+    flex-wrap: wrap;
   }
 
   .dashboard {

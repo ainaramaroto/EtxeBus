@@ -36,6 +36,12 @@
   let docOverlayEl;
   let docIframeEl;
   let docTitleEl;
+  let profileOverlayEl;
+  let profileNameEl;
+  let profileEmailEl;
+  let profileErrorEl;
+  let profileSuccessEl;
+  let profileFormEl;
 
   function openDocOverlay(docUrl, docTitle) {
     if (!docUrl || !docOverlayEl || !docIframeEl) return;
@@ -60,28 +66,44 @@
     injectStyles();
     initInfoOverlay();
 
-    const trigger = document.querySelector('[data-role="header-favorites"]');
-    if (trigger) {
-      trigger.addEventListener('click', (event) => {
+    const favoritesTrigger = document.querySelector('[data-role="header-favorites"]');
+    if (favoritesTrigger) {
+      favoritesTrigger.addEventListener('click', (event) => {
         event.preventDefault();
         toggleOverlay();
       });
-      trackAuthState();
     }
+
+    const profileTrigger = document.querySelector('[data-role="header-profile"]');
+    if (profileTrigger) {
+      profileTrigger.addEventListener('click', (event) => {
+        event.preventDefault();
+        toggleProfileOverlay();
+      });
+    }
+
+    trackAuthState();
   });
 
   function trackAuthState() {
+    const applyState = (state) => {
+      isLoggedIn = Boolean(state);
+      if (!isLoggedIn) {
+        favorites = [];
+        renderOverlay();
+        hideOverlay();
+        toggleProfileOverlay(false);
+      } else {
+        populateProfileUser();
+      }
+    };
+
     if (window.EtxebusSession && typeof window.EtxebusSession.subscribe === 'function') {
       window.EtxebusSession.subscribe(({ loggedIn }) => {
-        isLoggedIn = Boolean(loggedIn);
-        if (!isLoggedIn) {
-          favorites = [];
-          renderOverlay();
-          hideOverlay();
-        }
+        applyState(loggedIn);
       });
     } else {
-      isLoggedIn = window.localStorage.getItem('etxebusSession') === 'authenticated';
+      applyState(window.localStorage.getItem('etxebusSession') === 'authenticated');
     }
   }
 
@@ -274,6 +296,198 @@
       console.warn('No se pudo leer el usuario almacenado', error);
       return null;
     }
+  }
+
+  function ensureProfileOverlay() {
+    if (profileOverlayEl) return;
+    profileOverlayEl = document.createElement('div');
+    profileOverlayEl.className = 'profile-overlay';
+    profileOverlayEl.setAttribute('hidden', '');
+    profileOverlayEl.setAttribute('aria-hidden', 'true');
+    profileOverlayEl.innerHTML = `
+      <div class="profile-card" role="dialog" aria-modal="true" aria-label="Mi perfil">
+        <div class="profile-card__header">
+          <div class="profile-identity">
+            <p class="profile-eyebrow">Mi perfil</p>
+            <h3 data-profile-name>Usuario</h3>
+            <p class="profile-email" data-profile-email> </p>
+          </div>
+          <button type="button" class="profile-close" data-profile-close aria-label="Cerrar perfil">&times;</button>
+        </div>
+        <div class="profile-card__body">
+          <form class="profile-form" data-profile-form novalidate>
+            <label>
+              <span>Contraseña nueva</span>
+              <input type="password" name="newPassword" minlength="4" autocomplete="new-password" required>
+            </label>
+            <label>
+              <span>Repetir contraseña</span>
+              <input type="password" name="confirmPassword" minlength="4" autocomplete="new-password" required>
+            </label>
+            <p class="profile-feedback profile-feedback--error" data-profile-error></p>
+            <p class="profile-feedback profile-feedback--success" data-profile-success></p>
+            <button type="submit" class="profile-submit">Cambiar contraseña</button>
+          </form>
+          <button type="button" class="profile-logout" data-profile-logout>Cerrar sesión</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(profileOverlayEl);
+    profileNameEl = profileOverlayEl.querySelector('[data-profile-name]');
+    profileEmailEl = profileOverlayEl.querySelector('[data-profile-email]');
+    profileErrorEl = profileOverlayEl.querySelector('[data-profile-error]');
+    profileSuccessEl = profileOverlayEl.querySelector('[data-profile-success]');
+    profileFormEl = profileOverlayEl.querySelector('[data-profile-form]');
+
+    profileOverlayEl.addEventListener('click', (event) => {
+      if (event.target === profileOverlayEl) {
+        toggleProfileOverlay(false);
+      }
+      if (event.target.closest('[data-profile-close]')) {
+        toggleProfileOverlay(false);
+      }
+      if (event.target.closest('[data-profile-logout]')) {
+        event.preventDefault();
+        handleLogout();
+      }
+    });
+
+    if (profileFormEl) {
+      profileFormEl.addEventListener('submit', handleProfileSubmit);
+    }
+  }
+
+  function toggleProfileOverlay(force) {
+    if (!profileOverlayEl && force === false) {
+      return;
+    }
+    ensureProfileOverlay();
+    const shouldShow =
+      typeof force === 'boolean' ? force : profileOverlayEl.hasAttribute('hidden');
+    if (shouldShow) {
+      const user = populateProfileUser();
+      if (!user) {
+        window.location.href = 'login.html';
+        return;
+      }
+      resetProfileFeedback();
+      if (profileFormEl) {
+        profileFormEl.reset();
+      }
+      profileOverlayEl.removeAttribute('hidden');
+      profileOverlayEl.setAttribute('aria-hidden', 'false');
+    } else {
+      profileOverlayEl.setAttribute('hidden', '');
+      profileOverlayEl.setAttribute('aria-hidden', 'true');
+    }
+  }
+
+  function populateProfileUser() {
+    const user = getCurrentUserCredentials();
+    if (profileNameEl) {
+      profileNameEl.textContent = user?.nomUsuario || 'Usuario';
+    }
+    if (profileEmailEl) {
+      profileEmailEl.textContent = user?.email || '';
+    }
+    return user;
+  }
+
+  function resetProfileFeedback() {
+    if (profileErrorEl) {
+      profileErrorEl.textContent = '';
+    }
+    if (profileSuccessEl) {
+      profileSuccessEl.textContent = '';
+    }
+  }
+
+  function showProfileError(message) {
+    if (profileErrorEl) {
+      profileErrorEl.textContent = message || 'No se pudo actualizar la contraseña.';
+    }
+    if (profileSuccessEl) {
+      profileSuccessEl.textContent = '';
+    }
+  }
+
+  function showProfileSuccess(message) {
+    if (profileSuccessEl) {
+      profileSuccessEl.textContent = message || 'Contraseña actualizada correctamente.';
+    }
+    if (profileErrorEl) {
+      profileErrorEl.textContent = '';
+    }
+  }
+
+  async function handleProfileSubmit(event) {
+    event.preventDefault();
+    resetProfileFeedback();
+    if (!profileFormEl) return;
+    const formData = new FormData(profileFormEl);
+    const newPassword = String(formData.get('newPassword') || '').trim();
+    const confirmPassword = String(formData.get('confirmPassword') || '').trim();
+
+    if (!newPassword || !confirmPassword) {
+      showProfileError('Debes completar la nueva contraseña.');
+      return;
+    }
+    if (newPassword.length < 6) {
+      showProfileError('La contraseña debe tener al menos 6 caracteres.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      showProfileError('Las contraseñas no coinciden.');
+      return;
+    }
+
+    const user = getCurrentUserCredentials();
+    if (!user?.idUsuario) {
+      window.location.href = 'login.html';
+      return;
+    }
+
+    try {
+      profileFormEl.classList.add('is-loading');
+      await updatePassword(user.idUsuario, newPassword);
+      showProfileSuccess('Contraseña actualizada con éxito.');
+      profileFormEl.reset();
+    } catch (error) {
+      showProfileError(error.message || 'No se pudo actualizar la contraseña.');
+    } finally {
+      profileFormEl.classList.remove('is-loading');
+    }
+  }
+
+  async function updatePassword(idUsuario, contrasenia) {
+    const response = await fetch(`${API_BASE_URL}/usuarios/${idUsuario}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contrasenia }),
+    });
+    let payload = null;
+    try {
+      payload = await response.json();
+    } catch (error) {
+      payload = null;
+    }
+    if (!response.ok) {
+      const message = payload?.message || `HTTP ${response.status}`;
+      throw new Error(message);
+    }
+    return payload?.data || null;
+  }
+
+  function handleLogout() {
+    if (window.EtxebusSession) {
+      window.EtxebusSession.clearUser();
+      window.EtxebusSession.setLoggedIn(false);
+    } else {
+      window.localStorage.removeItem('etxebusSession');
+      window.localStorage.removeItem('etxebusUser');
+    }
+    toggleProfileOverlay(false);
+    window.location.href = 'login.html';
   }
 
   function initInfoOverlay() {
@@ -726,6 +940,123 @@
         border: none;
         border-radius: 12px;
         background: #fff;
+      }
+      .profile-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(7, 21, 40, 0.45);
+        display: flex;
+        justify-content: flex-end;
+        align-items: flex-start;
+        padding: 5rem clamp(1rem, 5vw, 3rem) 2rem;
+        z-index: 130;
+      }
+      .profile-overlay[hidden] {
+        display: none;
+      }
+      .profile-card {
+        width: min(380px, calc(100% - 2rem));
+        background: #ffffff;
+        border-radius: 24px;
+        padding: 1.25rem 1.5rem;
+        box-shadow: 0 25px 55px rgba(6, 22, 52, 0.25);
+        border: 1px solid rgba(15, 30, 60, 0.08);
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+      .profile-card__header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+      }
+      .profile-identity h3 {
+        margin: 0.35rem 0 0;
+      }
+      .profile-identity p {
+        margin: 0;
+      }
+      .profile-eyebrow {
+        margin: 0;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.08em;
+        color: #5b6b85;
+      }
+      .profile-email {
+        color: #4b6075;
+        font-weight: 600;
+      }
+      .profile-close {
+        border: none;
+        background: #f3f6ff;
+        width: 36px;
+        height: 36px;
+        border-radius: 14px;
+        font-size: 1.4rem;
+        cursor: pointer;
+        color: #325a8d;
+      }
+      .profile-card__body {
+        display: flex;
+        flex-direction: column;
+        gap: 0.85rem;
+      }
+      .profile-form {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+      .profile-form label {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        font-weight: 700;
+        color: #26476a;
+      }
+      .profile-form input {
+        border: 1px solid rgba(15, 30, 60, 0.15);
+        border-radius: 12px;
+        padding: 0.7rem 0.85rem;
+        font-size: 1rem;
+        color: #0f253f;
+        background: #f7faff;
+      }
+      .profile-form.is-loading {
+        opacity: 0.65;
+        pointer-events: none;
+      }
+      .profile-submit {
+        border: none;
+        background: #0f5f97;
+        color: #ffffff;
+        font-weight: 700;
+        border-radius: 14px;
+        padding: 0.75rem 1rem;
+        cursor: pointer;
+        box-shadow: 0 12px 26px rgba(15, 95, 151, 0.28);
+      }
+      .profile-logout {
+        border: 1px solid rgba(15, 30, 60, 0.12);
+        background: #f8f8f8;
+        color: #0f253f;
+        font-weight: 700;
+        border-radius: 14px;
+        padding: 0.7rem 1rem;
+        cursor: pointer;
+      }
+      .profile-feedback {
+        margin: 0;
+        font-size: 0.9rem;
+        min-height: 1.1rem;
+      }
+      .profile-feedback--error {
+        color: #a01919;
+      }
+      .profile-feedback--success {
+        color: #0d7a2a;
+        font-weight: 700;
       }
       }
     `;

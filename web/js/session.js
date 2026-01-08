@@ -2,6 +2,7 @@
   const SESSION_KEY = 'etxebusSession';
   const USER_KEY = 'etxebusUser';
   const AUTH_SELECTOR = '[data-auth-role]';
+  const GUEST_SELECTOR = '[data-auth-guest]';
   const EVENT_NAME = 'etxebus:auth-change';
   const STYLE_ID = 'etxebus-auth-style';
 
@@ -11,6 +12,7 @@
 
   function applyVisibility(loggedIn) {
     const nodes = document.querySelectorAll(AUTH_SELECTOR);
+    const guestNodes = document.querySelectorAll(GUEST_SELECTOR);
     nodes.forEach((node) => {
       if (loggedIn) {
         node.removeAttribute('hidden');
@@ -18,6 +20,15 @@
       } else {
         node.setAttribute('hidden', '');
         node.setAttribute('aria-hidden', 'true');
+      }
+    });
+    guestNodes.forEach((node) => {
+      if (loggedIn) {
+        node.setAttribute('hidden', '');
+        node.setAttribute('aria-hidden', 'true');
+      } else {
+        node.removeAttribute('hidden');
+        node.setAttribute('aria-hidden', 'false');
       }
     });
   }
@@ -94,6 +105,9 @@
     style.id = STYLE_ID;
     style.textContent = `
       html:not(.etxebus-auth) [data-auth-role] {
+        display: none !important;
+      }
+      html.etxebus-auth [data-auth-guest] {
         display: none !important;
       }
     `;
