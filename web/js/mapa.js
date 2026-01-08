@@ -105,7 +105,7 @@ const PARADAS_LINEA2_BOKETE = [
   { nombre: 'L2 Lezama Legizamon', coord: d(-2.896714203551309, 43.247736109456135) },
   { nombre: 'L2 Tomas Meabe', coord: d(-2.9001729580517575, 43.24544512460776) },
   { nombre: 'L2 Zubialdea (El Boquete)', coord: d(-2.904239398789997, 43.24439361613609) },
-  { nombre: 'L2 Zubialdea (El Boquete) 2', coord: d(-2.9037884717608153, 43.24396966288082) },
+  { nombre: 'L2 Zubialdea (El Boquete)', coord: d(-2.9037884717608153, 43.24396966288082) },
   { nombre: 'L2 Tomas Meabe 2', coord: d(-2.9000632950565217, 43.245410025230086) },
   { nombre: 'L2 Lezama Legizamon 2', coord: d(-2.896459984789626, 43.24780509523457) },
   { nombre: 'L2 Fuenlabrada Kalea', coord: d(-2.8943843007617427, 43.246974801859636) }

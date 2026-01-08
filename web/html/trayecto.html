@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>EtxeBus - Planificar trayecto</title>
+  <link rel="icon" type="image/png" href="../image/logo.png">
   <link rel="stylesheet" href="../css/trayecto.css">
 </head>
 <body>
@@ -21,7 +22,7 @@
       <a class="nav-link active" href="trayecto.html">Trayecto</a>
     </nav>
     <div class="header-actions" data-auth-role="auth-controls" hidden>
-      <button class="header-icon" type="button" aria-label="Favoritos" id="header-favorites-button">
+      <button class="header-icon" type="button" aria-label="Favoritos" data-role="header-favorites">
         <svg viewBox="0 0 24 24"><path d="M12 3l2.5 4.9 5.4.8-3.9 3.8.9 5.6L12 15.8 7.1 18.1l.9-5.6-3.9-3.8 5.4-.8z"/></svg>
       </button>
       <button class="header-icon" type="button" aria-label="Perfil">
@@ -108,9 +109,9 @@
             </div>
             <span class="time-separator">:</span>
             <div class="time-slot">
-              <button type="button" class="time-step" data-unit="minute" data-step="5" aria-label="Sumar cinco minutos">+</button>
+              <button type="button" class="time-step" data-unit="minute" data-step="1" aria-label="Sumar un minuto">+</button>
               <span id="minute-display">00</span>
-              <button type="button" class="time-step" data-unit="minute" data-step="-5" aria-label="Restar cinco minutos">-</button>
+              <button type="button" class="time-step" data-unit="minute" data-step="-1" aria-label="Restar un minuto">-</button>
             </div>
           </div>
         </div>
@@ -124,21 +125,23 @@
       </div>
     </section>
 
-    <section class="favorites-panel" id="favorites-panel" aria-label="Trayectos favoritos" hidden>
-      <div class="favorites-panel__header">
-        <div>
-          <p class="section-label">Favoritos</p>
-          <h3>Tus trayectos guardados</h3>
+  <section class="favorites-panel" id="favorites-panel" aria-label="Trayectos favoritos" hidden>
+    <div class="favorites-panel__header">
+      <div>
+        <p class="section-label">Favoritos</p>
+        <h3>Tus trayectos guardados</h3>
         </div>
         <button type="button" class="favorites-panel__close" id="favorites-close" aria-label="Cerrar lista de favoritos">&times;</button>
       </div>
       <div id="favorites-list" class="favorites-panel__body">
         <p class="favorites-empty">Inicia sesi&oacute;n para guardar tus trayectos.</p>
-      </div>
-    </section>
-  </main>
+    </div>
+  </section>
 
-  <script src="../js/session.js"></script>
-  <script src="../js/trayecto.js"></script>
+</main>
+
+<script src="../js/session.js"></script>
+<script src="../js/header.js"></script>
+<script src="../js/trayecto.js"></script>
 </body>
 </html>

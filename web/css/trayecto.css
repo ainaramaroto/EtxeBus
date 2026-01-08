@@ -201,6 +201,13 @@ body {
   flex: 1;
 }
 
+.when-group .input-shell select {
+  min-height: 48px;
+  border-radius: 12px;
+  padding-right: 2.25rem;
+  font-weight: 600;
+}
+
 .form-group label {
   font-weight: 600;
   color: var(--muted);
@@ -223,11 +230,19 @@ body {
   font-weight: 600;
 }
 
+.input-shell input.combo-input {
+  font-weight: 400;
+}
+
 .combo-input {
   border-radius: 999px;
   background: #f7fbff;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  font-weight: 500;
+}
+
+.combo-input::placeholder {
+  font-weight: 400;
+  color: rgba(29, 53, 87, 0.65);
 }
 
 .combo-input:focus {
@@ -312,12 +327,6 @@ body {
 .favorite-btn:focus-visible {
   outline: 2px solid rgba(242, 169, 0, 0.45);
   outline-offset: 3px;
-}
-
-.when-group .input-shell select {
-  min-height: 48px;
-  border-radius: 12px;
-  padding-right: 2.25rem;
 }
 
 .time-group {

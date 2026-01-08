@@ -93,6 +93,7 @@ const GROUP_CANONICAL_PATHS = {
 const MERGE_STOP_SLUGS = new Set(['l1-l1-santa-marina']);
 const GROUP_CANONICAL_INDEX = buildCanonicalIndexMap();
 const SESSION_STORAGE_KEY = 'etxebusSession';
+const FAVORITE_PRELOAD_STORAGE_KEY = 'etxebusFavoritePreload';
 let favoriteTrips = [];
 let isAuthenticated = isUserLoggedIn();
 
@@ -113,7 +114,6 @@ const favoriteButton = document.getElementById('favorite-button');
 const favoritesPanel = document.getElementById('favorites-panel');
 const favoritesListEl = document.getElementById('favorites-list');
 const favoritesCloseButton = document.getElementById('favorites-close');
-const headerFavoritesButton = document.getElementById('header-favorites-button');
 
 document.addEventListener('DOMContentLoaded', initPlanner);
 
@@ -147,14 +147,12 @@ async function initPlanner() {
   if (favoritesListEl) {
     favoritesListEl.addEventListener('click', handleFavoritesListClick);
   }
-  if (headerFavoritesButton) {
-    headerFavoritesButton.addEventListener('click', () => toggleFavoritesPanel());
-  }
   updateDestinationOptions();
   updateOriginOptions();
   updateFavoriteControl();
   await refreshFavorites();
   await loadSchedules();
+  handleFavoritesQueryParam();
 }
 
 function formatStopLabel(stop) {
@@ -340,6 +338,7 @@ function toggleFavoritesPanel(force) {
     favoritesPanel.setAttribute('hidden', '');
   }
 }
+window.toggleFavoritesPanel = (force) => toggleFavoritesPanel(force);
 
 async function handleFavoritesListClick(event) {
   const button = event.target.closest('button[data-action]');
@@ -526,6 +525,74 @@ function executePlannerQuery(triggerSource = 'manual') {
     group: trip.group,
     scheduleStopId,
   });
+}
+
+function handleFavoritesQueryParam() {
+  const params = new URLSearchParams(window.location.search);
+  const wantsPanel = params.has('favoritos') && params.get('favoritos') !== '0';
+  const preloadValue = params.get('preload');
+  if (wantsPanel) params.delete('favoritos');
+  if (preloadValue) params.delete('preload');
+  if (!wantsPanel && !preloadValue && !hasStoredFavoritePreload()) return;
+  const nextQuery = params.toString();
+  const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ''}${window.location.hash}`;
+  window.history.replaceState({}, '', nextUrl);
+  if (wantsPanel) {
+    if (isAuthenticated) {
+      toggleFavoritesPanel(true);
+    } else {
+      showStatus('Inicia sesion para consultar tus favoritos.', true);
+    }
+  }
+  const preloadPayload = resolveFavoritePreload(preloadValue);
+  if (preloadPayload) {
+    applyFavoriteToPlanner(preloadPayload.origin, preloadPayload.destination);
+    executePlannerQuery('favorite');
+  }
+}
+
+function resolveFavoritePreload(queryValue) {
+  let originSlug = null;
+  let destinationSlug = null;
+  if (queryValue) {
+    const [originSlugRaw, destinationSlugRaw] = queryValue.split('--');
+    originSlug = originSlugRaw ? decodeURIComponent(originSlugRaw) : null;
+    destinationSlug = destinationSlugRaw ? decodeURIComponent(destinationSlugRaw) : null;
+  }
+  if (!originSlug || !destinationSlug) {
+    const stored = consumeFavoritePreload();
+    if (stored) {
+      originSlug = stored.origin;
+      destinationSlug = stored.destination;
+    }
+  }
+  if (originSlug && destinationSlug) {
+    return { origin: originSlug, destination: destinationSlug };
+  }
+  return null;
+}
+
+function hasStoredFavoritePreload() {
+  try {
+    return Boolean(window.sessionStorage.getItem(FAVORITE_PRELOAD_STORAGE_KEY));
+  } catch (error) {
+    return false;
+  }
+}
+
+function consumeFavoritePreload() {
+  try {
+    const raw = window.sessionStorage.getItem(FAVORITE_PRELOAD_STORAGE_KEY);
+    if (!raw) return null;
+    window.sessionStorage.removeItem(FAVORITE_PRELOAD_STORAGE_KEY);
+    const parsed = JSON.parse(raw);
+    if (parsed && parsed.origin && parsed.destination) {
+      return parsed;
+    }
+  } catch (error) {
+    console.warn('No se pudo recuperar el trayecto guardado.', error);
+  }
+  return null;
 }
 
 function resolveTripStops(originChoice, destinationChoice) {

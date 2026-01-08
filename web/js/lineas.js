@@ -228,7 +228,7 @@ let miniMapReady = false;
 const METRO_POINT = { coord: METRO_COORD, label: 'Metro', anchorTop: true };
 const SANTA_POINT = { coord: [-2.883024510937969, 43.255890099999405], label: 'Santa Marina' };
 const POLIGONO_POINT = { coord: [-2.89462322472418, 43.250428229805784], label: 'Poligono' };
-const BOKETE_POINT = { coord: [-2.9039, 43.2441], label: 'Bokete' };
+const BOKETE_POINT = { coord: [-2.9039, 43.2441], label: 'Boquete' };
 const ROTONDA_POINT = { coord: LINEA2_ROTONDA, label: '', anchorTop: false };
 const LINE_MARKERS = {
   'l1-metro': [METRO_POINT, SANTA_POINT],
