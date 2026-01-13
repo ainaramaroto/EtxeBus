@@ -15,11 +15,11 @@ Plataforma con microservicios de usuarios, transporte y un API Gateway que sirve
 
 - `mongo`: base de datos usada por el microservicio de usuarios.
 - `transporte_db`: PostgreSQL con la informacion de lineas, paradas y horarios.
-- `pgadmin` (opcional): cliente web para inspeccionar PostgreSQL.
-- `microservicioUsuarios`: API Node.js para autenticacion y gestion de usuarios/preferencias.
-- `microservicioTransporte`: API FastAPI que sirve lineas, trayectos y horarios.
-- `api-gateway`: fachada HTTP (`http://localhost:4000/api`) que orquesta las peticiones hacia ambos microservicios.
-- `web_frontend`: Nginx que expone el frontend estatico `web/` en `http://localhost:8080`.
+- `pgadmin` (opcional): cliente web para inspeccionar PostgreSQL en [http://localhost:5050](http://localhost:5050) (usuario `admin@example.com`, contraseña `admin` en el compose).
+- `microservicioUsuarios`: API Node.js para autenticacion y gestion de usuarios/preferencias ([http://localhost:3000](http://localhost:3000); health en `/health`; Swagger en `/docs`).
+- `microservicioTransporte`: API FastAPI que sirve lineas, trayectos y horarios ([http://localhost:5000](http://localhost:5000) y la documentacion en [http://localhost:5000/docs](http://localhost:5000/docs)).
+- `api-gateway`: fachada HTTP que orquesta las peticiones hacia ambos microservicios; expone el prefijo [http://localhost:4000/api](http://localhost:4000/api) (health en `/api/health`, Swagger unificado en `/api/docs`).
+- `web_frontend`: Nginx que expone el frontend estatico `web/` en [http://localhost:8080/html/principal.html](http://localhost:8080/html/principal.html).
 
 ## 2) Dependencias que hay que instalar
 
@@ -51,15 +51,15 @@ El frontend estatico no requiere build; solo se sirve con Nginx (contenedor) o c
 docker compose up -d --build
 ```
 
-Puertos expuestos una vez que todos los contenedores estan arriba:
+Accede a:
 
-- API Gateway: `http://localhost:4000/api`
-- Usuarios: `http://localhost:3000`
-- Transporte: `http://localhost:5000`
-- PostgreSQL: `localhost:5434` (usuario/clave `etxebus`)
-- MongoDB: `localhost:27018`
-- pgAdmin: `http://localhost:5050` (admin@etxebus.local / admin)
-- Frontend: `http://localhost:8080`
+- Frontend: [http://localhost:8080/html/principal.html](http://localhost:8080/html/principal.html)
+- API Gateway: [http://localhost:4000/api/docs](http://localhost:4000/api/docs) (health en `/api/health`)
+- Microservicio de usuarios: [http://localhost:3000](http://localhost:3000) (docs en `/docs`, health en `/health`)
+- Microservicio de transporte: [http://localhost:5000](http://localhost:5000) (docs en `/docs`)
+- MongoDB: `mongodb://localhost:27018`
+- PostgreSQL (transporte): `postgresql://etxebus:etxebus@localhost:5434/etxebus_transporte`
+- pgAdmin: [http://localhost:5050](http://localhost:5050) (`admin@example.com` / `admin`)
 
 ### Arranque manual para desarrollo
 
@@ -80,10 +80,10 @@ Puertos expuestos una vez que todos los contenedores estan arriba:
 
 ## 4) Cómo acceder a la parte cliente
 
-Con el servidor estatico activo, abre `http://localhost:8080/html/principal.html`. Desde esa pantalla principal podras navegar hacia:
+Con el servidor estatico activo, abre [http://localhost:8080/html/principal.html](http://localhost:8080/html/principal.html). Desde esa pantalla principal podras navegar hacia:
 
-- `/html/lineas.html` para el mapa de lineas y paradas.
-- `/html/horarios.html` para las tarjetas de horarios generadas dinamicamente desde el API Gateway.
-- `/html/trayecto.html` para planificar trayectos.
+- [http://localhost:8080/html/lineas.html](http://localhost:8080/html/lineas.html) para el mapa de lineas y paradas.
+- [http://localhost:8080/html/horarios.html](http://localhost:8080/html/horarios.html) para las tarjetas de horarios generadas dinamicamente desde el API Gateway.
+- [http://localhost:8080/html/trayecto.html](http://localhost:8080/html/trayecto.html) para planificar trayectos.
 
 En modo local sin Nginx tambien puedes abrir los archivos dentro de `web/html` directamente en el navegador, pero recuerda mantener `api-gateway` arrancado para que las llamadas `fetch` funcionen.

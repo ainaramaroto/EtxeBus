@@ -74,7 +74,7 @@ services:
       - transporte-data:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U etxebus"]
+      test: ["CMD-SHELL", "pg_isready -U etxebus -d etxebus_transporte"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -83,7 +83,7 @@ services:
     image: dpage/pgadmin4:8
     container_name: pgadmin-transporte
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@etxebus.local
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
       PGADMIN_DEFAULT_PASSWORD: admin
     ports:
       - "5050:80"

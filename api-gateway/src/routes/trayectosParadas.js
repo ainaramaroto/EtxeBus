@@ -7,15 +7,18 @@ const router = express.Router();
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const data = await transporteService.listLineas(req.query);
+    const data = await transporteService.listTrayectosParadas(req.query);
     res.json({ data });
   })
 );
 
 router.get(
-  '/:id',
+  '/:routeId/:stopId',
   asyncHandler(async (req, res) => {
-    const data = await transporteService.obtenerLinea(req.params.id);
+    const data = await transporteService.obtenerTrayectoParada(
+      req.params.routeId,
+      req.params.stopId
+    );
     res.json({ data });
   })
 );
@@ -23,23 +26,30 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    const data = await transporteService.crearLinea(req.body);
+    const data = await transporteService.crearTrayectoParada(req.body);
     res.status(201).json({ data });
   })
 );
 
 router.put(
-  '/:id',
+  '/:routeId/:stopId',
   asyncHandler(async (req, res) => {
-    const data = await transporteService.actualizarLinea(req.params.id, req.body);
+    const data = await transporteService.actualizarTrayectoParada(
+      req.params.routeId,
+      req.params.stopId,
+      req.body
+    );
     res.json({ data });
   })
 );
 
 router.delete(
-  '/:id',
+  '/:routeId/:stopId',
   asyncHandler(async (req, res) => {
-    const data = await transporteService.eliminarLinea(req.params.id);
+    const data = await transporteService.eliminarTrayectoParada(
+      req.params.routeId,
+      req.params.stopId
+    );
     res.json({ data });
   })
 );

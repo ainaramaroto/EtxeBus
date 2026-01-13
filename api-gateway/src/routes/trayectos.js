@@ -1,5 +1,5 @@
 const express = require('express');
-const horariosService = require('../services/horariosService');
+const transporteService = require('../services/transporteService');
 const asyncHandler = require('../utils/asyncHandler');
 
 const router = express.Router();
@@ -7,15 +7,7 @@ const router = express.Router();
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const data = await horariosService.listHorarios(req.query);
-    res.json({ data });
-  })
-);
-
-router.get(
-  '/publicados',
-  asyncHandler(async (req, res) => {
-    const data = await horariosService.listHorariosPublicados();
+    const data = await transporteService.listTrayectos(req.query);
     res.json({ data });
   })
 );
@@ -23,7 +15,7 @@ router.get(
 router.get(
   '/:id',
   asyncHandler(async (req, res) => {
-    const data = await horariosService.obtenerHorario(req.params.id);
+    const data = await transporteService.obtenerTrayecto(req.params.id);
     res.json({ data });
   })
 );
@@ -31,7 +23,7 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    const data = await horariosService.crearHorario(req.body);
+    const data = await transporteService.crearTrayecto(req.body);
     res.status(201).json({ data });
   })
 );
@@ -39,7 +31,7 @@ router.post(
 router.put(
   '/:id',
   asyncHandler(async (req, res) => {
-    const data = await horariosService.actualizarHorario(req.params.id, req.body);
+    const data = await transporteService.actualizarTrayecto(req.params.id, req.body);
     res.json({ data });
   })
 );
@@ -47,7 +39,7 @@ router.put(
 router.delete(
   '/:id',
   asyncHandler(async (req, res) => {
-    const data = await horariosService.eliminarHorario(req.params.id);
+    const data = await transporteService.eliminarTrayecto(req.params.id);
     res.json({ data });
   })
 );

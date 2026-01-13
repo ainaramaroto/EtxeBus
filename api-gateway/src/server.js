@@ -2,10 +2,12 @@ const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
 const morgan = require('morgan');
+const swaggerUi = require('swagger-ui-express');
 const config = require('./config');
 const routes = require('./routes');
 const notFound = require('./middleware/notFound');
 const errorHandler = require('./middleware/errorHandler');
+const swaggerSpec = require('./swagger');
 
 const app = express();
 
@@ -20,11 +22,14 @@ const corsOptions = {
   credentials: true,
 };
 
-app.use(helmet());
+app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan(config.env === 'production' ? 'combined' : 'dev'));
+
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, { explorer: true }));
+app.get('/api/openapi.json', (req, res) => res.json(swaggerSpec));
 
 app.use('/api', routes);
 
