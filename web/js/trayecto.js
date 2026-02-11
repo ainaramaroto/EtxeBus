@@ -76,6 +76,8 @@ const STOP_CHOICE_MAP = new Map(STOP_CHOICES.map((choice) => [choice.slug, choic
 const STOP_ID_TO_SLUG = buildStopIdSlugMap(STOP_CHOICES);
 const LINE_STOP_SPAN = buildLineSpan();
 const LINE_STEP_MINUTES = buildLineStepMinutes(LINE_STOP_SPAN);
+const METRO_ETXEBARRI_PATTERN = /metro\s+etxebarri/i;
+const METRO_DEPARTURE_LIMIT = 5;
 const GROUP_DEPARTURE_LABELS = {
   L1: {
     forward: 'Salida desde Metro Etxebarri',
@@ -163,6 +165,15 @@ function formatStopLabel(stop) {
 
 function slugify(text) {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
+function escapeHtml(value = '') {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function buildStopChoices() {
@@ -476,6 +487,7 @@ function executePlannerQuery(triggerSource = 'manual') {
   }
 
   const baseTime = new Date();
+  const wantsMetroBoard = shouldShowMetroBoard(trip.destination);
   if (whenSelect.value === 'plan') {
     if (!timeInput.value) {
       showStatus('Selecciona la hora estimada del viaje.', true);
@@ -496,7 +508,9 @@ function executePlannerQuery(triggerSource = 'manual') {
   const scheduleStopId = schedule.stopId || trip.origin.id;
 
   const baseMinutes = baseTime.getHours() * 60 + baseTime.getMinutes();
-  const { upcoming: upcomingTimes, sortedMinutes } = getNextDepartures(schedule.horas, baseMinutes);
+  const offsetMinutes = calculateDepartureOffset(trip, scheduleStopId);
+  const baseMinutesAtSchedule = baseMinutes - offsetMinutes;
+  const { upcoming: upcomingTimes, sortedMinutes } = getNextDepartures(schedule.horas, baseMinutesAtSchedule);
   if (!upcomingTimes.length) {
     if (sortedMinutes.length) {
       renderNoTripsMessage(sortedMinutes[0]);
@@ -507,9 +521,10 @@ function executePlannerQuery(triggerSource = 'manual') {
   }
 
   const nextDeparture = upcomingTimes[0];
-  const diffMinutes = Math.max(toMinutes(nextDeparture) - baseMinutes, 0);
+  const diffMinutes = Math.max(toMinutes(nextDeparture) + offsetMinutes - baseMinutes, 0);
   const travelMinutes = estimateTravelMinutes(trip);
-  const waitMinutes = diffMinutes + calculateDepartureOffset(trip, scheduleStopId);
+  const waitMinutes = diffMinutes;
+  const arrivalDate = new Date(baseTime.getTime() + (waitMinutes + travelMinutes) * 60000);
   renderResult({
     origin: trip.origin,
     destination: trip.destination,
@@ -518,6 +533,7 @@ function executePlannerQuery(triggerSource = 'manual') {
     diffMinutes,
     travelMinutes,
     waitMinutes,
+    arrivalDate,
     upcoming: upcomingTimes.slice(1),
     scheduleType: schedule.tipoDia,
     referenceTime: baseTime,
@@ -525,7 +541,14 @@ function executePlannerQuery(triggerSource = 'manual') {
     direction: trip.direction,
     group: trip.group,
     scheduleStopId,
+    showMetroBoard: wantsMetroBoard,
   });
+
+  if (wantsMetroBoard) {
+    const arrivalMinutesFromBase = diffMinutes + travelMinutes;
+    const arrivalDate = new Date(baseTime.getTime() + arrivalMinutesFromBase * 60000);
+    hydrateMetroDepartures(METRO_DEPARTURE_LIMIT, arrivalDate);
+  }
 }
 
 function handleFavoritesQueryParam() {
@@ -858,6 +881,7 @@ function renderResult({
   diffMinutes,
   travelMinutes,
   waitMinutes,
+  arrivalDate,
   upcoming,
   scheduleType,
   referenceTime,
@@ -865,6 +889,7 @@ function renderResult({
   direction,
   group,
   scheduleStopId,
+  showMetroBoard = false,
 }) {
   const countdownLabel = diffMinutes <= 0 ? 'Listo para salir' : `${diffMinutes} min`;
   const departureLabel = getDepartureLabel(group, direction, origin.lineId, scheduleStopId);
@@ -875,6 +900,20 @@ function renderResult({
         .join('')}</ul></div>`
     : '<p class="muted-label">No hay mas salidas cercanas.</p>';
   const routeTimeline = buildRouteTimeline(pathIds, origin, destination);
+  const metroBoard = showMetroBoard
+    ? `<div class="metro-board" data-role="metro-departures">
+        <div class="metro-board__header">
+          <div>
+            <p class="section-label">Metro Bilbao</p>
+            <h4>Próximos en Metro Etxebarri</h4>
+          </div>
+          <span class="metro-board__badge" aria-hidden="true">Tiempo real</span>
+        </div>
+        <div class="metro-board__body">
+          <p class="loading">Cargando próximos metros...</p>
+        </div>
+      </div>`
+    : '';
 
   resultsPanel.innerHTML = `
     <div class="result-card">
@@ -911,15 +950,74 @@ function renderResult({
           <span>${travelMinutes} min</span>
         </div>
         <div>
+          <p>Llegada estimada</p>
+          <span>${arrivalDate ? formatMinutes(arrivalDate.getHours() * 60 + arrivalDate.getMinutes()) : '-'}</span>
+        </div>
+        <div>
           <p>Consulta realizada</p>
           <span>${formatMinutes(referenceTime.getHours() * 60 + referenceTime.getMinutes())}  ${
     whenSelect.value === 'now' ? 'Viajar ahora' : 'Hora planificada'
   }</span>
         </div>
       </div>
+      ${metroBoard}
       ${routeTimeline}
     </div>
   `;
+}
+
+function shouldShowMetroBoard(stop) {
+  return Boolean(stop && typeof stop.name === 'string' && METRO_ETXEBARRI_PATTERN.test(stop.name));
+}
+
+async function hydrateMetroDepartures(limit = METRO_DEPARTURE_LIMIT, arrivalDate = null) {
+  const block = resultsPanel.querySelector('[data-role="metro-departures"]');
+  if (!block) return;
+  const body = block.querySelector('.metro-board__body') || block;
+  body.innerHTML = '<p class="loading">Cargando próximos metros...</p>';
+
+  try {
+    const params = new URLSearchParams({ limit: String(limit) });
+    if (arrivalDate instanceof Date && !Number.isNaN(arrivalDate.getTime())) {
+      params.set('at', String(arrivalDate.getTime()));
+    }
+    params.set('tzOffset', String(new Date().getTimezoneOffset()));
+    const response = await fetch(`${API_BASE_URL}/metro/etxebarri?${params.toString()}`);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    const departures = payload?.data?.departures || [];
+    if (!departures.length) {
+      body.innerHTML = '<p class="muted-label">No hay salidas publicadas ahora mismo.</p>';
+      return;
+    }
+    const items = departures
+      .map((item, index) => {
+        const isNow = Number.isFinite(item.minutesUntil) && item.minutesUntil <= 0;
+        const minutesLabel =
+          Number.isFinite(item.minutesUntil) && !isNow ? `${item.minutesUntil} min` : '';
+        const badge = index === 0 ? '<span class="metro-chip">Próximo</span>' : '';
+        const nowClass = isNow ? ' is-now' : '';
+        const nowDot = isNow ? '<span class="metro-dot" aria-hidden="true"></span>' : '';
+        return `<li class="metro-board__item${index === 0 ? ' is-next' : ''}${nowClass}">
+            <div class="metro-time">${escapeHtml(item.time || '-')}</div>
+            <div class="metro-destination">
+              <strong>Destino ${escapeHtml(item.destination || 'Sin destino')}</strong>
+              ${minutesLabel ? `<span>${minutesLabel}</span>` : nowDot}
+            </div>
+            ${badge}
+          </li>`;
+      })
+      .join('');
+    if (!resultsPanel.contains(block)) return;
+    body.innerHTML = `<ul class="metro-board__list">${items}</ul><p class="metro-footnote">Datos Metro Bilbao Open Data</p>`;
+  } catch (error) {
+    console.warn('No se pudieron cargar los metros en tiempo real', error);
+    if (resultsPanel.contains(block)) {
+      body.innerHTML = '<div class="error-message">No se pudieron cargar los próximos metros.</div>';
+    }
+  }
 }
 
 function showStatus(message, isError = false) {

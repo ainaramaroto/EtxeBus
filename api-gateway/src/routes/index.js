@@ -6,6 +6,7 @@ const lineasRouter = require('./lineas');
 const paradasRouter = require('./paradas');
 const trayectosRouter = require('./trayectos');
 const trayectosParadasRouter = require('./trayectosParadas');
+const metroRouter = require('./metro');
 
 const router = express.Router();
 
@@ -29,5 +30,6 @@ router.use('/lineas', lineasRouter);
 router.use('/paradas', paradasRouter);
 router.use('/trayectos', trayectosRouter);
 router.use('/trayectos-paradas', trayectosParadasRouter);
+router.use('/metro', metroRouter);
 
 module.exports = router;
