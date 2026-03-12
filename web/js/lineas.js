@@ -1,4 +1,4 @@
-mapboxgl.accessToken = 'pk.eyJ1IjoiaW5pZ29maWF0IiwiYSI6ImNtZ3psb3JhMTBnc2gybHI0dzZpOWpqYnYifQ.wAcZcyjV9eSJYxHNsn7vfg';
+mapboxgl.accessToken = process.env.MAPBOX_TOKEN
 
 const API_BASE_URL = window.ETXEBUS_API_BASE || 'http://localhost:4000/api';
 
@@ -225,11 +225,25 @@ const PRECOMPUTED_ROUTE_ALIASES = {
 const PRECOMPUTED_ROUTES = window.ETXEBUS_PRECOMPUTED_ROUTES || {};
 let miniMap;
 let miniMapReady = false;
-const METRO_POINT = { coord: METRO_COORD, label: 'Metro', anchorTop: true };
-const SANTA_POINT = { coord: [-2.883024510937969, 43.255890099999405], label: 'Santa Marina' };
-const POLIGONO_POINT = { coord: [-2.89462322472418, 43.250428229805784], label: 'Poligono' };
-const BOKETE_POINT = { coord: [-2.9039, 43.2441], label: 'Boquete' };
+const METRO_POINT = { coord: METRO_COORD, label: 'Metro', labelAnchor: 'top', labelOffset: [0, 1.2] };
+const SANTA_POINT = {
+  coord: [-2.883024510937969, 43.255890099999405],
+  label: 'Santa Marina',
+  labelAbove: true,
+  labelAnchor: 'bottom',
+  labelOffset: [0, -0.6],
+};
+const POLIGONO_POINT = { coord: [-2.89462322472418, 43.250428229805784], label: 'Poligono', labelAnchor: 'left', labelOffset: [0.7, 0.15] };
+const BOKETE_POINT = {
+  coord: [-2.9039, 43.2441],
+  label: 'Zubialdea (El Boquete)',
+  labelAnchor: 'left',
+  labelOffset: [0.85, 0.2],
+  labelWrap: true,
+};
 const ROTONDA_POINT = { coord: LINEA2_ROTONDA, label: '', anchorTop: false };
+const HIGHLIGHTED_STOP_KEYWORDS = ['boquete', 'metro', 'santa marina', 'poligono'];
+const ARROW_PATTERN = /\s*->\s*/g;
 const LINE_MARKERS = {
   'l1-metro': [METRO_POINT, SANTA_POINT],
   'l1-santamarina': [SANTA_POINT, METRO_POINT],
@@ -353,9 +367,9 @@ function ingestLines(lines) {
       const normalized = {
         lineId: linea.idLinea ?? null,
         slug,
-        name: linea.nomLinea || linea.name || `Linea ${index + 1}`,
+        name: replaceArrows(linea.nomLinea || linea.name || `Linea ${index + 1}`),
         badge: linea.badge || linea.line_badge || linea.nomLinea || linea.name || `Linea ${index + 1}`,
-        subtitle: linea.subtitle || linea.service_name || '',
+        subtitle: replaceArrows(linea.subtitle || linea.service_name || ''),
         info: linea.info || linea.description || '',
         color: linea.color || linea.line_color || '#0b2447',
         orden: linea.orden ?? index,
@@ -379,9 +393,9 @@ function useFallbackLines() {
     LINES_DATA[slug] = {
       lineId: data.idLinea ?? null,
       slug,
-      name: data.name,
+      name: replaceArrows(data.name),
       badge: data.badge || data.name,
-      subtitle: data.subtitle || '',
+      subtitle: replaceArrows(data.subtitle || ''),
       info: data.info || '',
       color: data.color || '#0b2447',
       orden: data.orden ?? index,
@@ -585,15 +599,32 @@ function setupMiniMapLayers() {
       filter: ['==', ['get', 'label'], true],
       layout: {
         'text-field': ['get', 'name'],
-        'text-size': 11,
-        'text-offset': [0, 1.2],
-        'text-anchor': 'top',
-        'text-allow-overlap': true
+        'text-size': 12.5,
+        'text-offset': [
+          'case',
+          ['has', 'labelOffset'],
+          ['get', 'labelOffset'],
+          ['literal', [0, 0.85]],
+        ],
+        'text-anchor': [
+          'case',
+          ['has', 'labelAnchor'],
+          ['get', 'labelAnchor'],
+          'top',
+        ],
+        'text-font': ['DIN Offc Pro Bold', 'Arial Unicode MS Bold'],
+        'text-allow-overlap': false,
+        'text-ignore-placement': false,
+        'text-padding': 2,
+        'text-max-width': ['case', ['==', ['get', 'labelWrap'], true], 6, 10],
+        'text-line-height': 1.05,
+        'symbol-sort-key': ['get', 'priority'],
+        'symbol-avoid-edges': true
       },
       paint: {
-        'text-color': '#0b2447',
+        'text-color': '#0b1f3a',
         'text-halo-color': '#ffffff',
-        'text-halo-width': 1
+        'text-halo-width': 2
       }
     });
   }
@@ -636,17 +667,71 @@ async function getRouteGeometry(key) {
   return geometry;
 }
 
+function normalizeStopName(name = '') {
+  return String(name)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
+function shouldLabelStop(name = '') {
+  const normalized = normalizeStopName(name);
+  return HIGHLIGHTED_STOP_KEYWORDS.some((keyword) => normalized.includes(keyword));
+}
+
+function replaceArrows(text = '') {
+  return String(text).replace(ARROW_PATTERN, ' \u2192 ');
+}
+
 function buildFeaturesFromLine(line) {
   if (!line || !Array.isArray(line.stopDetails)) return [];
+  const labeled = new Set();
   return line.stopDetails
     .map((stop) => {
       const lng = typeof stop.coordX === 'number' ? stop.coordX : null;
       const lat = typeof stop.coordY === 'number' ? stop.coordY : null;
       if (!Number.isFinite(lng) || !Number.isFinite(lat)) return null;
+      const displayName = (stop.nombre || '').replace(/^L\d\s*/i, '').trim();
+      const normalizedName = normalizeStopName(displayName);
+      let label = false;
+      if (shouldLabelStop(displayName) && !labeled.has(normalizedName)) {
+        label = true;
+        labeled.add(normalizedName);
+      }
+      let labelAbove = false;
+      let labelAnchor = null;
+      let labelOffset = null;
+      let labelWrap = false;
+      let priority = 0;
+      if (label) {
+        if (normalizedName.includes('santa marina')) {
+          labelAbove = true;
+          labelAnchor = 'bottom';
+          labelOffset = [0, -0.6];
+          priority = 4;
+        } else if (normalizedName.includes('boquete') || normalizedName.includes('zubialdea')) {
+          labelAnchor = 'left';
+          labelOffset = [0.85, 0.2];
+          priority = 3;
+          labelWrap = true;
+        } else if (normalizedName.includes('poligono')) {
+          labelAnchor = 'left';
+          labelOffset = [0.7, 0.15];
+          priority = 3;
+        } else if (normalizedName.includes('metro etxebarri')) {
+          labelAnchor = 'top';
+          labelOffset = [0, 1.2];
+          priority = 3;
+        } else {
+          labelAnchor = 'top';
+          labelOffset = [0, 0.85];
+          priority = 2;
+        }
+      }
       return {
         type: 'Feature',
         geometry: { type: 'Point', coordinates: [lng, lat] },
-        properties: { name: stop.nombre || '', label: true },
+        properties: { name: displayName, label, labelAbove, labelAnchor, labelOffset, labelWrap, priority },
       };
     })
     .filter(Boolean);
@@ -657,13 +742,58 @@ function updateStopMarkers(key) {
   if (!source) return;
   const line = LINES_DATA[key];
   let features = buildFeaturesFromLine(line);
+  const markers = LINE_MARKERS[key] || [];
   if (!features.length) {
-    const markers = LINE_MARKERS[key] || [];
     features = markers.map((m) => ({
       type: 'Feature',
       geometry: { type: 'Point', coordinates: m.coord },
-      properties: { name: m.label || '', label: Boolean(m.label) },
+      properties: {
+        name: m.label || '',
+        label: Boolean(m.label),
+        labelAbove: Boolean(m.labelAbove),
+        labelAnchor: m.labelAnchor || null,
+        labelOffset: m.labelOffset || null,
+        labelWrap: Boolean(m.labelWrap),
+        priority: m.label ? 3 : 0,
+      },
     }));
+  } else if (markers.length) {
+    markers.forEach((m) => {
+      const markerName = normalizeStopName(m.label || '');
+      const match = features.find(
+        (f) =>
+          normalizeStopName(f.properties?.name || '') === markerName ||
+          (Array.isArray(f.geometry?.coordinates) &&
+            f.geometry.coordinates[0] === m.coord[0] &&
+            f.geometry.coordinates[1] === m.coord[1]),
+      );
+      if (match) {
+        match.properties = {
+          ...match.properties,
+          name: m.label || match.properties?.name || '',
+          label: Boolean(m.label),
+          labelAbove: Boolean(m.labelAbove),
+          labelAnchor: m.labelAnchor || match.properties?.labelAnchor || null,
+          labelOffset: m.labelOffset || match.properties?.labelOffset || null,
+          labelWrap: Boolean(m.labelWrap) || match.properties?.labelWrap || false,
+          priority: Math.max(match.properties?.priority || 0, m.label ? 3 : 0),
+        };
+        return;
+      }
+      features.push({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: m.coord },
+        properties: {
+          name: m.label || '',
+          label: Boolean(m.label),
+          labelAbove: Boolean(m.labelAbove),
+          labelAnchor: m.labelAnchor || null,
+          labelOffset: m.labelOffset || null,
+          labelWrap: Boolean(m.labelWrap),
+          priority: m.label ? 3 : 0,
+        },
+      });
+    });
   }
   source.setData({ type: 'FeatureCollection', features });
 }

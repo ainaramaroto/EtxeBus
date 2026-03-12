@@ -98,6 +98,8 @@ const SESSION_STORAGE_KEY = 'etxebusSession';
 const FAVORITE_PRELOAD_STORAGE_KEY = 'etxebusFavoritePreload';
 let favoriteTrips = [];
 let isAuthenticated = isUserLoggedIn();
+let selectedDate = new Date();
+let pickerMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
 
 const originInput = document.getElementById('origin-input');
 const originOptions = document.getElementById('origin-options');
@@ -106,6 +108,12 @@ const destinationOptions = document.getElementById('destination-options');
 const whenSelect = document.getElementById('when-select');
 const timeWrapper = document.getElementById('time-wrapper');
 const timeInput = document.getElementById('time-input');
+const dateInput = document.getElementById('date-input');
+const dateTrigger = document.querySelector('.date-trigger');
+const datePicker = document.getElementById('date-picker');
+const datePickerGrid = document.getElementById('date-picker-grid');
+const datePickerMonth = document.getElementById('date-picker-month');
+const datePickerYear = document.getElementById('date-picker-year');
 const timePicker = document.getElementById('time-picker');
 const hourDisplay = document.getElementById('hour-display');
 const minuteDisplay = document.getElementById('minute-display');
@@ -124,6 +132,29 @@ async function initPlanner() {
   populateStopOptions(originInput, originOptions);
   populateStopOptions(destinationInput, destinationOptions);
   timeInput.value = formatTimeInput(new Date());
+  if (dateInput) {
+    selectedDate = new Date();
+    pickerMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+    dateInput.value = formatDateInput(selectedDate);
+    dateInput.addEventListener('click', openDatePicker);
+    dateInput.addEventListener('focus', openDatePicker);
+    dateInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        openDatePicker();
+      }
+    });
+  }
+  if (dateTrigger) {
+    dateTrigger.addEventListener('click', (event) => {
+      event.preventDefault();
+      openDatePicker();
+    });
+  }
+  if (datePicker) {
+    datePicker.addEventListener('click', (event) => event.stopPropagation());
+    renderDatePicker();
+  }
   syncTimeDisplays();
   originInput.addEventListener('input', handleOriginInput);
   originInput.addEventListener('change', handleOriginInput);
@@ -464,6 +495,19 @@ function handleWhenChange() {
   const planning = whenSelect.value === 'plan';
   timeWrapper.hidden = !planning;
   timeInput.required = planning;
+  if (dateInput) {
+    dateInput.required = planning;
+    if (planning && !dateInput.value) {
+      setSelectedDate(new Date());
+    }
+    if (!planning) {
+      setSelectedDate(new Date());
+    }
+  }
+  if (planning && !timeInput.value) {
+    timeInput.value = formatTimeInput(new Date());
+    syncTimeDisplays();
+  }
 }
 
 function handleFormSubmit(event) {
@@ -486,12 +530,24 @@ function executePlannerQuery(triggerSource = 'manual') {
     return;
   }
 
-  const baseTime = new Date();
+  let baseTime = new Date();
   const wantsMetroBoard = shouldShowMetroBoard(trip.destination);
   if (whenSelect.value === 'plan') {
+    if (dateInput && !dateInput.value) {
+      showStatus('Selecciona la fecha del viaje.', true);
+      return;
+    }
     if (!timeInput.value) {
       showStatus('Selecciona la hora estimada del viaje.', true);
       return;
+    }
+    const selectedDate = dateInput ? parseDateInput(dateInput.value) : null;
+    if (dateInput && !selectedDate) {
+      showStatus('Fecha seleccionada no válida.', true);
+      return;
+    }
+    if (selectedDate) {
+      baseTime = selectedDate;
     }
     const [hour, minute] = timeInput.value.split(':').map(Number);
     baseTime.setHours(hour);
@@ -783,8 +839,143 @@ function formatMinutes(totalMinutes) {
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 }
 
+function formatDateInput(date) {
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+
 function formatTimeInput(date) {
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+}
+
+function parseDateInput(value) {
+  if (!value) return null;
+  let day;
+  let month;
+  let year;
+  if (value.includes('/')) {
+    [day, month, year] = value.split('/').map(Number);
+  } else {
+    [year, month, day] = value.split('-').map(Number);
+  }
+  if (![year, month, day].every(Number.isFinite)) return null;
+  const date = new Date();
+  date.setFullYear(year, (month || 1) - 1, day || 1);
+  date.setHours(0, 0, 0, 0);
+  if (Number.isNaN(date.getTime())) return null;
+  return date;
+}
+
+function openDatePicker() {
+  if (!datePicker) return;
+  if (!datePicker.hidden) return;
+  datePicker.hidden = false;
+  window.setTimeout(() => {
+    document.addEventListener('click', handleOutsideDatePicker);
+    document.addEventListener('keydown', handleDatePickerKeydown);
+  }, 0);
+}
+
+function closeDatePicker() {
+  if (datePicker) {
+    datePicker.hidden = true;
+  }
+  document.removeEventListener('click', handleOutsideDatePicker);
+  document.removeEventListener('keydown', handleDatePickerKeydown);
+}
+
+function handleOutsideDatePicker(event) {
+  const isInside =
+    datePicker?.contains(event.target) || dateInput?.contains(event.target) || event.target === dateInput;
+  if (!isInside) {
+    closeDatePicker();
+  }
+}
+
+function handleDatePickerKeydown(event) {
+  if (event.key === 'Escape') {
+    closeDatePicker();
+  }
+}
+
+function setSelectedDate(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return;
+  selectedDate = date;
+  pickerMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+  dateInput.value = formatDateInput(selectedDate);
+  renderDatePicker();
+}
+
+function renderDatePicker() {
+  if (!datePicker || !datePickerGrid || !datePickerMonth || !datePickerYear) return;
+  const year = pickerMonth.getFullYear();
+  const month = pickerMonth.getMonth();
+  const monthName = pickerMonth.toLocaleString('es-ES', { month: 'long' });
+  datePickerMonth.textContent = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+  datePickerYear.textContent = String(year);
+
+  const firstDay = new Date(year, month, 1);
+  const startDay = (firstDay.getDay() + 6) % 7; // lunes=0
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const prevMonthDays = new Date(year, month, 0).getDate();
+
+  const cells = [];
+  for (let i = startDay - 1; i >= 0; i -= 1) {
+    const day = prevMonthDays - i;
+    cells.push({ day, offset: -1 });
+  }
+  for (let d = 1; d <= daysInMonth; d += 1) {
+    cells.push({ day: d, offset: 0 });
+  }
+  while (cells.length % 7 !== 0) {
+    cells.push({ day: cells.length % 7 + 1, offset: 1 });
+  }
+
+  datePickerGrid.innerHTML = cells
+    .map(({ day, offset }) => {
+      const cellDate = new Date(year, month + offset, day);
+      const isSelected =
+        selectedDate &&
+        cellDate.getFullYear() === selectedDate.getFullYear() &&
+        cellDate.getMonth() === selectedDate.getMonth() &&
+        cellDate.getDate() === selectedDate.getDate();
+      const isToday = (() => {
+        const now = new Date();
+        return (
+          now.getFullYear() === cellDate.getFullYear() &&
+          now.getMonth() === cellDate.getMonth() &&
+          now.getDate() === cellDate.getDate()
+        );
+      })();
+      const classes = ['date-picker__day'];
+      if (isSelected) classes.push('is-selected');
+      if (isToday) classes.push('is-today');
+      if (offset !== 0) classes.push('is-out');
+      return `<button type="button" class="${classes.join(' ')}" data-day="${day}" data-offset="${offset}" role="gridcell" aria-label="${formatDateInput(
+        cellDate,
+      )}">${day}</button>`;
+    })
+    .join('');
+
+  datePickerGrid.querySelectorAll('.date-picker__day').forEach((btn) => {
+    btn.addEventListener('click', (event) => {
+      const day = Number(event.currentTarget.dataset.day);
+      const offset = Number(event.currentTarget.dataset.offset);
+      const nextDate = new Date(year, month + offset, day);
+      setSelectedDate(nextDate);
+      closeDatePicker();
+    });
+  });
+
+  datePicker.querySelectorAll('.date-picker__nav').forEach((btn) => {
+    btn.onclick = () => {
+      const dir = Number(btn.dataset.dir) || 0;
+      pickerMonth = new Date(pickerMonth.getFullYear(), pickerMonth.getMonth() + dir, 1);
+      renderDatePicker();
+    };
+  });
 }
 
 function handleTimePickerClick(event) {
@@ -946,18 +1137,16 @@ function renderResult({
           <span>${waitDisplay}</span>
         </div>
         <div>
-          <p>Duracion estimada</p>
+          <p>Duración</p>
           <span>${travelMinutes} min</span>
         </div>
         <div>
-          <p>Llegada estimada</p>
+          <p>Llegada</p>
           <span>${arrivalDate ? formatMinutes(arrivalDate.getHours() * 60 + arrivalDate.getMinutes()) : '-'}</span>
         </div>
         <div>
           <p>Consulta realizada</p>
-          <span>${formatMinutes(referenceTime.getHours() * 60 + referenceTime.getMinutes())}  ${
-    whenSelect.value === 'now' ? 'Viajar ahora' : 'Hora planificada'
-  }</span>
+          <span>${formatMinutes(referenceTime.getHours() * 60 + referenceTime.getMinutes())}</span>
         </div>
       </div>
       ${metroBoard}
@@ -997,16 +1186,17 @@ async function hydrateMetroDepartures(limit = METRO_DEPARTURE_LIMIT, arrivalDate
         const isNow = Number.isFinite(item.minutesUntil) && item.minutesUntil <= 0;
         const minutesLabel =
           Number.isFinite(item.minutesUntil) && !isNow ? `${item.minutesUntil} min` : '';
-        const badge = index === 0 ? '<span class="metro-chip">Próximo</span>' : '';
+        const statusIndicator = isNow
+          ? '<span class="metro-dot metro-dot--indicator" role="status" aria-label="Llegando ahora" title="Llegando ahora"></span>'
+          : '';
         const nowClass = isNow ? ' is-now' : '';
-        const nowDot = isNow ? '<span class="metro-dot" aria-hidden="true"></span>' : '';
         return `<li class="metro-board__item${index === 0 ? ' is-next' : ''}${nowClass}">
             <div class="metro-time">${escapeHtml(item.time || '-')}</div>
             <div class="metro-destination">
               <strong>Destino ${escapeHtml(item.destination || 'Sin destino')}</strong>
-              ${minutesLabel ? `<span>${minutesLabel}</span>` : nowDot}
+              ${minutesLabel ? `<span>${minutesLabel}</span>` : ''}
             </div>
-            ${badge}
+            ${statusIndicator}
           </li>`;
       })
       .join('');

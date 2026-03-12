@@ -76,7 +76,7 @@
             <div class="input-shell">
               <select id="when-select">
                 <option value="now">Viajar ahora</option>
-                <option value="plan">Planificar hora</option>
+                <option value="plan">Planificar</option>
               </select>
             </div>
           </div>
@@ -100,21 +100,52 @@
         </div>
 
         <div class="time-group" id="time-wrapper" hidden>
-          <label for="time-input">Hora estimada</label>
-          <div class="input-shell">
-            <input type="time" id="time-input" value="08:00">
-          </div>
-          <div class="time-picker" id="time-picker" aria-hidden="true">
-            <div class="time-slot">
-              <button type="button" class="time-step" data-unit="hour" data-step="1" aria-label="Sumar una hora">+</button>
-              <span id="hour-display">08</span>
-              <button type="button" class="time-step" data-unit="hour" data-step="-1" aria-label="Restar una hora">-</button>
+          <p class="muted-label">Fecha y hora</p>
+          <div class="date-time-grid">
+            <div class="form-group">
+              <label for="date-input">Fecha</label>
+              <div class="input-shell date-shell">
+                <input type="text" id="date-input" inputmode="none" autocomplete="off" readonly placeholder="dd/mm/aaaa">
+                <button type="button" class="date-trigger" aria-label="Abrir calendario">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <rect x="4" y="5" width="16" height="15" rx="2" ry="2" fill="none" stroke="currentColor" stroke-width="2"/>
+                    <path d="M8 3v4M16 3v4M4 9h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                </button>
+                <div class="date-picker" id="date-picker" hidden>
+                  <div class="date-picker__header">
+                    <button type="button" class="date-picker__nav" data-dir="-1" aria-label="Mes anterior">‹</button>
+                    <div class="date-picker__title">
+                      <span id="date-picker-month"></span>
+                      <span id="date-picker-year" class="muted-label"></span>
+                    </div>
+                    <button type="button" class="date-picker__nav" data-dir="1" aria-label="Mes siguiente">›</button>
+                  </div>
+                  <div class="date-picker__weekdays" aria-hidden="true">
+                    <span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span>
+                  </div>
+                  <div class="date-picker__grid" id="date-picker-grid" role="grid" aria-label="Seleccionar fecha"></div>
+                </div>
+              </div>
             </div>
-            <span class="time-separator">:</span>
-            <div class="time-slot">
-              <button type="button" class="time-step" data-unit="minute" data-step="1" aria-label="Sumar un minuto">+</button>
-              <span id="minute-display">00</span>
-              <button type="button" class="time-step" data-unit="minute" data-step="-1" aria-label="Restar un minuto">-</button>
+            <div class="form-group">
+              <label for="time-input">Hora</label>
+              <div class="input-shell">
+                <input type="time" id="time-input" value="08:00">
+              </div>
+              <div class="time-picker" id="time-picker" aria-hidden="true">
+                <div class="time-slot">
+                  <button type="button" class="time-step" data-unit="hour" data-step="1" aria-label="Sumar una hora">+</button>
+                  <span id="hour-display">08</span>
+                  <button type="button" class="time-step" data-unit="hour" data-step="-1" aria-label="Restar una hora">-</button>
+                </div>
+                <span class="time-separator">:</span>
+                <div class="time-slot">
+                  <button type="button" class="time-step" data-unit="minute" data-step="1" aria-label="Sumar un minuto">+</button>
+                  <span id="minute-display">00</span>
+                  <button type="button" class="time-step" data-unit="minute" data-step="-1" aria-label="Restar un minuto">-</button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
