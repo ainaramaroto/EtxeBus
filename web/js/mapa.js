@@ -1,5 +1,5 @@
 // mapa.js
-mapboxgl.accessToken = 'pk.eyJ1IjoiaW5pZ29maWF0IiwiYSI6ImNtZ3psb3JhMTBnc2gybHI0dzZpOWpqYnYifQ.wAcZcyjV9eSJYxHNsn7vfg';
+mapboxgl.accessToken = '';
 
 const MAP_STYLE = 'mapbox://styles/mapbox/streets-v12';
 const CENTRO_ETXEBARRI = [-2.888064738494468, 43.24850496812509];

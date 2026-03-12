@@ -1,4 +1,4 @@
-mapboxgl.accessToken = ""
+mapboxgl.accessToken = ''
 
 const API_BASE_URL = window.ETXEBUS_API_BASE || 'http://localhost:4000/api';
 
