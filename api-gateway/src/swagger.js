@@ -28,6 +28,7 @@ const swaggerSpec = {
     { name: 'Trayectos', description: 'Trayectos entre paradas' },
     { name: 'Trayecto-Parada', description: 'Asignacion de paradas a trayectos' },
     { name: 'Horarios', description: 'Horarios crudos y publicados' },
+    { name: 'Metro', description: 'Salidas de Metro Etxebarri (GTFS)' },
   ],
   components: {
     schemas: {
@@ -94,6 +95,16 @@ const swaggerSpec = {
           destination_label: { type: 'string', nullable: true },
         },
         required: ['idUsuario', 'tipo'],
+      },
+      PreferenciaUpdate: {
+        type: 'object',
+        properties: {
+          tipo: { type: 'string' },
+          origin_slug: { type: 'string', nullable: true },
+          destination_slug: { type: 'string', nullable: true },
+          origin_label: { type: 'string', nullable: true },
+          destination_label: { type: 'string', nullable: true },
+        },
       },
       Linea: {
         type: 'object',
@@ -277,6 +288,33 @@ const swaggerSpec = {
     },
   },
   paths: {
+    '/': {
+      get: {
+        tags: ['Health'],
+        summary: 'Informacion base del gateway',
+        description:
+          'Endpoint raiz del API Gateway con enlaces rapidos a documentacion y healthcheck.',
+        responses: {
+          200: {
+            description: 'Informacion del gateway',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    status: { type: 'string', example: 'ok' },
+                    message: { type: 'string', example: 'EtxeBus API Gateway' },
+                    docs: { type: 'string', example: '/api/docs' },
+                    health: { type: 'string', example: '/api/health' },
+                  },
+                  required: ['status', 'message', 'docs', 'health'],
+                },
+              },
+            },
+          },
+        },
+      },
+    },
     '/health': {
       get: {
         tags: ['Health'],
@@ -443,6 +481,47 @@ const swaggerSpec = {
         },
       },
     },
+    '/usuarios/logout': {
+      post: {
+        tags: ['Auth'],
+        summary: 'Logout (proxy)',
+        description:
+          'Reenvia el cierre de sesion al microservicio de usuarios. Actualmente la operacion es stateless.',
+        requestBody: {
+          required: false,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  idUsuario: { type: 'integer', example: 12345678 },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: 'Sesion cerrada',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    data: {
+                      type: 'object',
+                      properties: {
+                        loggedOut: { type: 'boolean', example: true },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
     '/favoritos': {
       get: {
         tags: ['Favoritos'],
@@ -500,6 +579,56 @@ const swaggerSpec = {
           description: 'idPreferencia',
         },
       ],
+      get: {
+        tags: ['Favoritos'],
+        summary: 'Obtener favorito por id (proxy)',
+        parameters: [{ $ref: '#/components/parameters/IdUsuarioQuery' }],
+        responses: {
+          200: {
+            description: 'Favorito encontrado',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: { data: { $ref: '#/components/schemas/Preferencia' } },
+                },
+              },
+            },
+          },
+          404: {
+            description: 'No encontrado',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
+          },
+        },
+      },
+      put: {
+        tags: ['Favoritos'],
+        summary: 'Actualizar favorito (proxy)',
+        parameters: [{ $ref: '#/components/parameters/IdUsuarioQuery' }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': { schema: { $ref: '#/components/schemas/PreferenciaUpdate' } },
+          },
+        },
+        responses: {
+          200: {
+            description: 'Favorito actualizado',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: { data: { $ref: '#/components/schemas/Preferencia' } },
+                },
+              },
+            },
+          },
+          404: {
+            description: 'No encontrado',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
+          },
+        },
+      },
       delete: {
         tags: ['Favoritos'],
         summary: 'Eliminar favorito (proxy)',
@@ -1081,6 +1210,79 @@ const swaggerSpec = {
                 },
               },
             },
+          },
+        },
+      },
+    },
+    '/metro/etxebarri': {
+      get: {
+        tags: ['Metro'],
+        summary: 'Proximas salidas desde Metro Etxebarri',
+        description:
+          'Consulta salidas GTFS filtradas para la estacion de Etxebarri. Soporta limite y fecha/hora de referencia.',
+        parameters: [
+          {
+            name: 'limit',
+            in: 'query',
+            required: false,
+            schema: { type: 'integer', minimum: 1, maximum: 10, default: 5 },
+            description: 'Numero maximo de salidas a devolver.',
+          },
+          {
+            name: 'at',
+            in: 'query',
+            required: false,
+            schema: { type: 'string', example: '2026-05-18T18:30:00+02:00' },
+            description:
+              'Marca temporal de referencia (ISO o timestamp epoch) para calcular proximas salidas.',
+          },
+          {
+            name: 'tzOffset',
+            in: 'query',
+            required: false,
+            schema: { type: 'integer', example: -120 },
+            description:
+              'Offset horario en minutos respecto a UTC (por ejemplo, Europe/Madrid en verano: -120).',
+          },
+        ],
+        responses: {
+          200: {
+            description: 'Salidas calculadas correctamente',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    data: {
+                      type: 'object',
+                      properties: {
+                        station: { type: 'string', example: 'Metro Etxebarri' },
+                        generatedAt: { type: 'string', format: 'date-time' },
+                        stopIds: { type: 'array', items: { type: 'string' } },
+                        departures: {
+                          type: 'array',
+                          items: {
+                            type: 'object',
+                            properties: {
+                              time: { type: 'string', example: '18:34' },
+                              destination: { type: 'string', example: 'Casco Viejo' },
+                              tripId: { type: 'string' },
+                              serviceId: { type: 'string' },
+                              stopId: { type: 'string' },
+                              minutesUntil: { type: 'integer', example: 4 },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          502: {
+            description: 'No se pudo consultar el origen GTFS remoto',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
           },
         },
       },

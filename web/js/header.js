@@ -478,7 +478,32 @@
     return payload?.data || null;
   }
 
+  async function notifyBackendLogout() {
+    const user = getCurrentUserCredentials();
+    const payload = user?.idUsuario ? { idUsuario: user.idUsuario } : null;
+    const requestOptions = {
+      method: 'POST',
+      keepalive: true,
+    };
+
+    if (payload) {
+      requestOptions.headers = { 'Content-Type': 'application/json' };
+      requestOptions.body = JSON.stringify(payload);
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/usuarios/logout`, requestOptions);
+      if (!response.ok) {
+        console.warn('El backend no confirmo el logout:', response.status);
+      }
+    } catch (error) {
+      console.warn('No se pudo notificar el logout al backend:', error);
+    }
+  }
+
   function handleLogout() {
+    void notifyBackendLogout();
+
     if (window.EtxebusSession) {
       window.EtxebusSession.clearUser();
       window.EtxebusSession.setLoggedIn(false);

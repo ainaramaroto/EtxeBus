@@ -1,0 +1,378 @@
+{
+  "info": {
+    "name": "EtxeBus TFG - Pruebas Funcionales Manuales",
+    "description": "Coleccion manual para demostrar endpoints clave de api-gateway, microservicioUsuarios y microservicioTransporte.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "gateway_url", "value": "http://localhost:4000/api" },
+    { "key": "users_url", "value": "http://localhost:3000" },
+    { "key": "transport_url", "value": "http://localhost:5000" },
+    { "key": "usuario_id", "value": "1" },
+    { "key": "favorito_id", "value": "1" },
+    { "key": "linea_id", "value": "1" },
+    { "key": "parada_id", "value": "1" },
+    { "key": "trayecto_id", "value": "1" },
+    { "key": "horario_id", "value": "1" }
+  ],
+  "item": [
+    {
+      "name": "01 Health Checks",
+      "item": [
+        {
+          "name": "Gateway - GET /api/health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gateway_url}}/health",
+            "description": "Esperado: 200 {status: ok, service: api-gateway}"
+          }
+        },
+        {
+          "name": "Usuarios - GET /health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{users_url}}/health",
+            "description": "Esperado: 200 {status: ok, service: microservicio-usuarios}"
+          }
+        },
+        {
+          "name": "Transporte - GET /health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{transport_url}}/health",
+            "description": "Esperado: 200 {status: ok, service: microservicioTransporte}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 Auth y Usuarios",
+      "item": [
+        {
+          "name": "Gateway - POST /usuarios/login",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"ainara@example.com\",\n  \"contrasenia\": \"secret123\"\n}"
+            },
+            "url": "{{gateway_url}}/usuarios/login",
+            "description": "Esperado: 200 con datos de usuario o 401 si credenciales invalidas"
+          }
+        },
+        {
+          "name": "Usuarios - POST /auth/login",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"ainara@example.com\",\n  \"contrasenia\": \"secret123\"\n}"
+            },
+            "url": "{{users_url}}/auth/login",
+            "description": "Esperado: 200 con data. Error esperado: 401"
+          }
+        },
+        {
+          "name": "Gateway - POST /usuarios/logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idUsuario\": {{usuario_id}}\n}"
+            },
+            "url": "{{gateway_url}}/usuarios/logout",
+            "description": "Esperado: 200 con { data: { loggedOut: true } }"
+          }
+        },
+        {
+          "name": "Usuarios - POST /auth/logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idUsuario\": {{usuario_id}}\n}"
+            },
+            "url": "{{users_url}}/auth/logout",
+            "description": "Esperado: 200 con { data: { loggedOut: true } }"
+          }
+        },
+        {
+          "name": "Usuarios - GET /usuarios",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{users_url}}/usuarios",
+            "description": "Esperado: 200 con lista de usuarios"
+          }
+        },
+        {
+          "name": "Usuarios - POST /usuarios",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nomUsuario\": \"usuario_tfg\",\n  \"email\": \"usuario_tfg@example.com\",\n  \"contrasenia\": \"secret123\"\n}"
+            },
+            "url": "{{users_url}}/usuarios",
+            "description": "Esperado: 201. Errores esperados: 400 o 409"
+          }
+        },
+        {
+          "name": "Usuarios - GET /usuarios/{id}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{users_url}}/usuarios/{{usuario_id}}",
+            "description": "Esperado: 200 si existe, 404 si no existe"
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Favoritos",
+      "item": [
+        {
+          "name": "Gateway - GET /favoritos?idUsuario=",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gateway_url}}/favoritos?idUsuario={{usuario_id}}",
+            "description": "Esperado: 200. Error esperado: 400 si falta idUsuario"
+          }
+        },
+        {
+          "name": "Gateway - POST /favoritos",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idUsuario\": 1,\n  \"tipo\": \"trayecto\",\n  \"origin_slug\": \"metro\",\n  \"destination_slug\": \"santa-marina\",\n  \"origin_label\": \"Metro\",\n  \"destination_label\": \"Santa Marina\"\n}"
+            },
+            "url": "{{gateway_url}}/favoritos",
+            "description": "Esperado: 201"
+          }
+        },
+        {
+          "name": "Gateway - DELETE /favoritos/{id}",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{gateway_url}}/favoritos/{{favorito_id}}?idUsuario={{usuario_id}}",
+            "description": "Esperado: 204. Error esperado: 404"
+          }
+        },
+        {
+          "name": "Transporte - GET /favoritos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{transport_url}}/favoritos?usuario=ainara&contrasenia=secret123",
+            "description": "Esperado: 200"
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 Lineas",
+      "item": [
+        {
+          "name": "Gateway - GET /lineas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gateway_url}}/lineas",
+            "description": "Esperado: 200 con lineas"
+          }
+        },
+        {
+          "name": "Gateway - GET /lineas/{id}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gateway_url}}/lineas/{{linea_id}}",
+            "description": "Esperado: 200 o 404"
+          }
+        },
+        {
+          "name": "Transporte - POST /lineas/",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slug\": \"linea-tfg\",\n  \"nomLinea\": \"Linea TFG\",\n  \"badge\": \"LTFG\",\n  \"subtitle\": \"Servicio de prueba\",\n  \"info\": \"Alta manual desde Postman\",\n  \"color\": \"#135790\",\n  \"orden\": 99\n}"
+            },
+            "url": "{{transport_url}}/lineas/",
+            "description": "Esperado: 201"
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 Paradas",
+      "item": [
+        {
+          "name": "Gateway - GET /paradas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gateway_url}}/paradas",
+            "description": "Esperado: 200"
+          }
+        },
+        {
+          "name": "Transporte - POST /paradas/",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Parada TFG\",\n  \"coordX\": 43.25,\n  \"coordY\": -2.89,\n  \"idLinea\": 1,\n  \"orden\": 1\n}"
+            },
+            "url": "{{transport_url}}/paradas/",
+            "description": "Esperado: 201. Error esperado: 400 si idLinea no existe"
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 Rutas (Trayectos)",
+      "item": [
+        {
+          "name": "Gateway - GET /trayectos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gateway_url}}/trayectos",
+            "description": "Esperado: 200"
+          }
+        },
+        {
+          "name": "Transporte - POST /trayectos/",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idOrigen\": 1,\n  \"idDestino\": 2,\n  \"duracionEstm\": 12.5\n}"
+            },
+            "url": "{{transport_url}}/trayectos/",
+            "description": "Esperado: 201. Error esperado: 400 si origen/destino no existen"
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 Horarios",
+      "item": [
+        {
+          "name": "Gateway - GET /horarios",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gateway_url}}/horarios",
+            "description": "Esperado: 200"
+          }
+        },
+        {
+          "name": "Gateway - GET /horarios/publicados",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gateway_url}}/horarios/publicados",
+            "description": "Esperado: 200"
+          }
+        },
+        {
+          "name": "Transporte - POST /horarios/",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipoDia\": \"LECTIVO\",\n  \"horas\": [\"08:10\", \"08:20\"],\n  \"idLinea\": 1,\n  \"idParada\": 1\n}"
+            },
+            "url": "{{transport_url}}/horarios/",
+            "description": "Esperado: 201. Error esperado: 422 si faltan campos requeridos"
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 Errores Esperados",
+      "item": [
+        {
+          "name": "400 - Usuarios id invalido",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{users_url}}/usuarios/abc",
+            "description": "Esperado: 400"
+          }
+        },
+        {
+          "name": "401 - Login invalido",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"foo@bar.com\",\n  \"contrasenia\": \"incorrecta\"\n}"
+            },
+            "url": "{{users_url}}/auth/login",
+            "description": "Esperado: 401"
+          }
+        },
+        {
+          "name": "404 - Ruta inexistente en gateway",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gateway_url}}/no-existe",
+            "description": "Esperado: 404"
+          }
+        },
+        {
+          "name": "502 - Gateway sin microservicio transporte",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gateway_url}}/lineas",
+            "description": "Esperado: 502 cuando microservicioTransporte esta caido o inaccesible"
+          }
+        }
+      ]
+    }
+  ]
+}

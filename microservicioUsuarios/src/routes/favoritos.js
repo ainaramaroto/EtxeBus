@@ -15,6 +15,32 @@ function parseNumericId(value) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function buildUpdatesFromPayload(payload = {}) {
+  const updates = {};
+
+  if (Object.prototype.hasOwnProperty.call(payload, 'tipo')) {
+    if (!Preferencia.validarTipo(payload.tipo)) {
+      throw httpError(400, 'tipo invalido');
+    }
+    updates.tipo = String(payload.tipo).trim();
+  }
+
+  const stringFields = [
+    'origin_slug',
+    'destination_slug',
+    'origin_label',
+    'destination_label',
+  ];
+
+  stringFields.forEach((field) => {
+    if (Object.prototype.hasOwnProperty.call(payload, field)) {
+      updates[field] = Preferencia.parseNullableString(payload[field], 120);
+    }
+  });
+
+  return updates;
+}
+
 router.get(
   '/',
   asyncHandler(async (req, res) => {
@@ -28,6 +54,31 @@ router.get(
       .lean();
     const data = preferencias.map((item) => Preferencia.fromObject(item).toJSON());
     res.json({ data });
+  })
+);
+
+router.get(
+  '/:id',
+  asyncHandler(async (req, res) => {
+    const idPreferencia = parseNumericId(req.params.id);
+    if (idPreferencia === null) {
+      throw httpError(400, 'idPreferencia invalido');
+    }
+    const idUsuario = parseNumericId(req.query.idUsuario || req.query.id_usuario);
+    if (idUsuario === null) {
+      throw httpError(400, 'idUsuario requerido');
+    }
+
+    const encontrada = await PreferenciaModel.findOne({
+      idPreferencia,
+      idUsuario,
+    }).lean();
+
+    if (!encontrada) {
+      throw httpError(404, 'Preferencia no encontrada');
+    }
+
+    res.json({ data: Preferencia.fromObject(encontrada).toJSON() });
   })
 );
 
@@ -62,6 +113,43 @@ router.post(
     }
 
     res.status(201).json({ data: preferencia.toJSON() });
+  })
+);
+
+router.put(
+  '/:id',
+  asyncHandler(async (req, res) => {
+    const idPreferencia = parseNumericId(req.params.id);
+    if (idPreferencia === null) {
+      throw httpError(400, 'idPreferencia invalido');
+    }
+    const idUsuario = parseNumericId(req.query.idUsuario || req.query.id_usuario);
+    if (idUsuario === null) {
+      throw httpError(400, 'idUsuario requerido');
+    }
+
+    const updates = buildUpdatesFromPayload(req.body || {});
+    if (!Object.keys(updates).length) {
+      throw httpError(400, 'No hay campos para actualizar');
+    }
+
+    const existente = await PreferenciaModel.findOne({ idPreferencia, idUsuario });
+    if (!existente) {
+      throw httpError(404, 'Preferencia no encontrada');
+    }
+
+    Object.assign(existente, updates);
+
+    try {
+      await existente.save();
+    } catch (error) {
+      if (error.code === 11000) {
+        throw httpError(409, 'La preferencia ya existe para este usuario');
+      }
+      throw error;
+    }
+
+    res.json({ data: Preferencia.fromObject(existente.toObject()).toJSON() });
   })
 );
 

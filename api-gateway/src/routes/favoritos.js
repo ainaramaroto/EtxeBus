@@ -12,11 +12,31 @@ router.get(
   })
 );
 
+router.get(
+  '/:id',
+  asyncHandler(async (req, res) => {
+    const data = await favoritosService.obtenerFavorito(req.params.id, req.query);
+    res.json({ data });
+  })
+);
+
 router.post(
   '/',
   asyncHandler(async (req, res) => {
     const data = await favoritosService.crearFavorito(req.body);
     res.status(201).json({ data });
+  })
+);
+
+router.put(
+  '/:id',
+  asyncHandler(async (req, res) => {
+    const data = await favoritosService.actualizarFavorito(
+      req.params.id,
+      req.body,
+      req.query
+    );
+    res.json({ data });
   })
 );
 

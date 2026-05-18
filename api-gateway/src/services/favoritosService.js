@@ -18,8 +18,18 @@ async function listFavoritos(query = {}) {
   return unwrap(data);
 }
 
+async function obtenerFavorito(id, query = {}) {
+  const { data } = await client.get(`/favoritos/${id}`, { params: query });
+  return unwrap(data);
+}
+
 async function crearFavorito(payload) {
   const { data } = await client.post('/favoritos', payload);
+  return unwrap(data);
+}
+
+async function actualizarFavorito(id, payload, query = {}) {
+  const { data } = await client.put(`/favoritos/${id}`, payload, { params: query });
   return unwrap(data);
 }
 
@@ -29,6 +39,8 @@ async function eliminarFavorito(id, query = {}) {
 
 module.exports = {
   listFavoritos,
+  obtenerFavorito,
   crearFavorito,
+  actualizarFavorito,
   eliminarFavorito,
 };

@@ -1,21 +1,54 @@
-# Dependency directories
+# Node dependencies
 node_modules/
 **/node_modules/
 
-# Environment config
-.env
-*.env
+# Python virtual environments
+.venv/
+venv/
+**/.venv/
+**/venv/
 
-# Build artifacts
+# Python caches and artifacts
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+**/.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Build artifacts and reports
 dist/
 build/
 coverage/
+.nyc_output/
 .next/
 out/
 
+# Environment config
+.env
+.env.*
+*.env
+!.env.example
+
 # Logs
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 
+# IDE / OS files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Local app overrides
 web/config.local.js

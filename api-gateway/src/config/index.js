@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 // Carga el archivo .env si existe en la raíz del proyecto
 dotenv.config({
   path: path.resolve(process.cwd(), '.env'),
+  quiet: true,
 });
 
 const parseOrigins = (value) => {

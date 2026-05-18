@@ -3,6 +3,7 @@ const dotenv = require('dotenv');
 
 dotenv.config({
   path: path.resolve(process.cwd(), '.env'),
+  quiet: true,
 });
 
 const toInt = (value, fallback) => {

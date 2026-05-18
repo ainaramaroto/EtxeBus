@@ -40,6 +40,12 @@ ALLOWED_ORIGINS=http://localhost:8080,http://127.0.0.1:8080
 - `PUT /usuarios/:id`: Actualiza los datos del usuario.
 - `DELETE /usuarios/:id`: Elimina un usuario.
 - `POST /auth/login`: Valida credenciales (`email` + `contrasenia`).
+- `POST /auth/logout`: Cierra la sesion en backend (operacion stateless, preparada para evolucion de auth).
+- `GET /favoritos?idUsuario=...`: Lista favoritos del usuario.
+- `GET /favoritos/:id?idUsuario=...`: Recupera un favorito concreto del usuario.
+- `POST /favoritos`: Crea un favorito/preferencia.
+- `PUT /favoritos/:id?idUsuario=...`: Actualiza un favorito del usuario.
+- `DELETE /favoritos/:id?idUsuario=...`: Elimina un favorito del usuario.
 - `GET /health`: Verifica el estado del servicio.
 
 Las respuestas siguen el formato `{ data: ... }` y los errores utilizan codigos HTTP y mensajes en castellano.

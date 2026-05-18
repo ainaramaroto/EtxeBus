@@ -6,7 +6,7 @@ const favoritosRouter = require('./favoritos');
 const router = express.Router();
 
 router.get('/health', (req, res) => {
-  res.json({ status: 'ok' });
+  res.json({ status: 'ok', service: 'microservicio-usuarios' });
 });
 
 router.use('/usuarios', usuariosRouter);

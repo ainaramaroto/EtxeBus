@@ -11,7 +11,7 @@ const metroRouter = require('./metro');
 const router = express.Router();
 
 router.get('/health', (req, res) => {
-  res.json({ status: 'ok' });
+  res.json({ status: 'ok', service: 'api-gateway' });
 });
 
 router.get('/', (req, res) => {

@@ -61,4 +61,13 @@ router.post(
   })
 );
 
+// POST /api/usuarios/logout
+router.post(
+  '/logout',
+  asyncHandler(async (req, res) => {
+    const resultado = await usuariosService.logoutUsuario(req.body || {});
+    res.json({ data: resultado });
+  })
+);
+
 module.exports = router;

@@ -2,15 +2,18 @@
 const config = require('../config');
 
 const isProd = config.env === 'production';
+const isTest = config.env === 'test';
 
 function errorHandler(err, req, res, next) {
-  const status = err.status || err.statusCode || 500;
+  const isCorsDenied = typeof err.message === 'string'
+    && err.message.startsWith('Origen no permitido:');
+  const status = err.status || err.statusCode || (isCorsDenied ? 403 : 500);
   const payload = {
     message: err.message || 'Error interno del servidor',
   };
 
-  if (err.code) {
-    payload.code = err.code;
+  if (err.code || isCorsDenied) {
+    payload.code = err.code || 'CORS_ORIGIN_NOT_ALLOWED';
   }
 
   if (!isProd) {
@@ -18,10 +21,12 @@ function errorHandler(err, req, res, next) {
     if (err.details) payload.details = err.details;
   }
 
-  console.error(
-    `[microservicio-usuarios] ${err.message}`,
-    !isProd ? err : undefined
-  );
+  if (!isTest) {
+    console.error(
+      `[microservicio-usuarios] ${err.message}`,
+      !isProd ? err : undefined
+    );
+  }
   res.status(status).json(payload);
 }
 

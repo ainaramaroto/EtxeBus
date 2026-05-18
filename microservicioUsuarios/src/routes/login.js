@@ -41,4 +41,17 @@ router.post(
   })
 );
 
+router.post(
+  '/logout',
+  asyncHandler(async (req, res) => {
+    // Actualmente la autenticacion es stateless en cliente (sin token/cookie de sesion en backend).
+    // Este endpoint normaliza el cierre de sesion para futuras estrategias de auth.
+    res.json({
+      data: {
+        loggedOut: true,
+      },
+    });
+  })
+);
+
 module.exports = router;

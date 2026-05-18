@@ -43,6 +43,11 @@ async function loginUsuario(payload) {
   return unwrap(data);
 }
 
+async function logoutUsuario(payload = {}) {
+  const { data } = await client.post('/auth/logout', payload);
+  return unwrap(data);
+}
+
 module.exports = {
   listUsuarios,
   obtenerUsuario,
@@ -50,4 +55,5 @@ module.exports = {
   actualizarUsuario,
   eliminarUsuario,
   loginUsuario,
+  logoutUsuario,
 };

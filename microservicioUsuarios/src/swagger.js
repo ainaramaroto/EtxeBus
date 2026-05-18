@@ -85,6 +85,17 @@ const swaggerSpec = {
         },
         required: ['idUsuario', 'tipo'],
       },
+      PreferenciaUpdate: {
+        type: 'object',
+        properties: {
+          tipo: { type: 'string', example: 'trayecto' },
+          origin_slug: { type: 'string', nullable: true },
+          destination_slug: { type: 'string', nullable: true },
+          origin_label: { type: 'string', nullable: true },
+          destination_label: { type: 'string', nullable: true },
+        },
+        description: 'Campos parciales para actualizar una preferencia/favorito.',
+      },
       Error: {
         type: 'object',
         properties: {
@@ -300,6 +311,34 @@ const swaggerSpec = {
         },
       },
     },
+    '/auth/logout': {
+      post: {
+        tags: ['Auth'],
+        summary: 'Logout de usuario',
+        description:
+          'Cierre de sesion en backend (actualmente stateless; confirma la operacion y permite evolucion futura con tokens/cookies).',
+        responses: {
+          200: {
+            description: 'Sesion cerrada',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    data: {
+                      type: 'object',
+                      properties: {
+                        loggedOut: { type: 'boolean', example: true },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
     '/favoritos': {
       get: {
         tags: ['Favoritos'],
@@ -366,6 +405,62 @@ const swaggerSpec = {
           description: 'idPreferencia',
         },
       ],
+      get: {
+        tags: ['Favoritos'],
+        summary: 'Obtener favorito por id',
+        parameters: [{ $ref: '#/components/parameters/IdUsuarioQuery' }],
+        responses: {
+          200: {
+            description: 'Favorito encontrado',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: { data: { $ref: '#/components/schemas/Preferencia' } },
+                },
+              },
+            },
+          },
+          404: {
+            description: 'Preferencia no encontrada',
+            content: {
+              'application/json': { schema: { $ref: '#/components/schemas/Error' } },
+            },
+          },
+        },
+      },
+      put: {
+        tags: ['Favoritos'],
+        summary: 'Actualizar favorito',
+        parameters: [{ $ref: '#/components/parameters/IdUsuarioQuery' }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/PreferenciaUpdate' },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: 'Favorito actualizado',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: { data: { $ref: '#/components/schemas/Preferencia' } },
+                },
+              },
+            },
+          },
+          404: {
+            description: 'Preferencia no encontrada',
+            content: {
+              'application/json': { schema: { $ref: '#/components/schemas/Error' } },
+            },
+          },
+        },
+      },
       delete: {
         tags: ['Favoritos'],
         summary: 'Eliminar favorito',
