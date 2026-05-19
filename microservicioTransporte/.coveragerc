@@ -1,0 +1,4 @@
+[run]
+omit =
+    app/seed_data.py
+    app/services/external_schedule.py
