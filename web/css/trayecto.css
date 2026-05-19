@@ -6,6 +6,14 @@
   --text: #1d3557;
   --muted: #5c6b80;
   --border: #dfe6f3;
+  --header-height: 110px;
+  --viewport-height: 100vh;
+}
+
+@supports (height: 100dvh) {
+  :root {
+    --viewport-height: 100dvh;
+  }
 }
 
 * {
@@ -17,21 +25,24 @@ body {
   font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
   background: var(--bg-page);
   color: var(--text);
-  min-height: 100vh;
+  height: var(--viewport-height);
+  min-height: var(--viewport-height);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .horarios-header {
   background: var(--accent);
   color: #fff;
   padding: 1rem 2.5rem;
-  min-height: 110px;
+  min-height: var(--header-height);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
   box-shadow: 0 8px 20px rgba(13, 59, 102, 0.25);
+  flex-shrink: 0;
 }
 
 .horarios-header .brand {
@@ -40,6 +51,19 @@ body {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+}
+
+.horarios-header .brand:link,
+.horarios-header .brand:visited,
+.horarios-header .brand:hover,
+.horarios-header .brand:active {
+  color: #ffffff;
+  text-decoration: none;
+}
+
+.horarios-header .brand strong {
+  color: #ffffff;
+  text-decoration: none;
 }
 
 .horarios-header .brand img {
@@ -157,8 +181,13 @@ body {
   padding: 2rem clamp(1rem, 5vw, 4rem) 2.5rem;
   display: grid;
   grid-template-columns: minmax(320px, 480px) 1fr;
+  grid-template-rows: minmax(0, 1fr);
   gap: 2rem;
   flex: 1;
+  height: calc(var(--viewport-height) - var(--header-height));
+  min-height: 0;
+  overflow: hidden;
+  align-items: stretch;
 }
 
 .planner {
@@ -170,6 +199,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .planner-header {
@@ -283,6 +314,56 @@ body {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 2px rgba(15, 95, 151, 0.15);
+}
+
+.combo-dropdown {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 45;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 14px 26px rgba(15, 30, 60, 0.14);
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 0.3rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.combo-dropdown[hidden] {
+  display: none;
+}
+
+.combo-dropdown__item {
+  width: 100%;
+  border: none;
+  background: transparent;
+  text-align: left;
+  border-radius: 10px;
+  padding: 0.6rem 0.75rem;
+  color: var(--text);
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.combo-dropdown__item:hover,
+.combo-dropdown__item:focus-visible {
+  background: #eef6ff;
+  outline: none;
+}
+
+.combo-dropdown__item.is-selected {
+  background: var(--accent-soft);
+  font-weight: 700;
+}
+
+.combo-dropdown__empty {
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.92rem;
+  color: var(--muted);
 }
 
 .swap-btn {
@@ -619,8 +700,30 @@ body {
   border: 1px solid var(--border);
   box-shadow: 0 20px 45px rgba(15, 30, 60, 0.08);
   min-height: 360px;
+  height: 100%;
   display: flex;
   flex-direction: column;
+  min-height: 0;
+  max-height: 100%;
+  overflow-y: scroll;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(15, 95, 151, 0.45) transparent;
+}
+
+.results-panel::-webkit-scrollbar {
+  width: 10px;
+}
+
+.results-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.results-panel::-webkit-scrollbar-thumb {
+  background: rgba(15, 95, 151, 0.35);
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.7);
 }
 
 .empty-state {
@@ -972,7 +1075,7 @@ body {
   border: 1px solid var(--border);
   box-shadow: 0 20px 45px rgba(15, 30, 60, 0.25);
   padding: 1rem 1.25rem;
-  max-height: calc(100vh - 160px);
+  max-height: calc(var(--viewport-height) - 160px);
   overflow-y: auto;
   z-index: 50;
 }
@@ -1058,6 +1161,26 @@ body {
   color: #8a1c1c;
 }
 
+@media (max-width: 900px) {
+  .horarios-header {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1rem 1.1rem;
+  }
+
+  .horarios-header nav {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .header-zone {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
 @media (max-width: 720px) {
   .favorites-panel {
     position: fixed;
@@ -1071,8 +1194,19 @@ body {
 }
 
 @media (max-width: 1024px) {
+  body {
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
   .trayecto-main {
     grid-template-columns: 1fr;
+    height: auto;
+    overflow: visible;
+  }
+
+  .results-panel {
+    max-height: min(56vh, 560px);
   }
 }
 
@@ -1084,7 +1218,7 @@ body {
 
   .header-zone {
     flex-wrap: wrap;
-    justify-content: center;
+    justify-content: flex-start;
     width: 100%;
   }
 

@@ -3,9 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f5f97">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="EtxeBus">
   <title>EtxeBus - Planificar trayecto</title>
   <link rel="icon" type="image/png" href="../image/logo.png">
-  <link rel="stylesheet" href="../css/trayecto.css">
+  <link rel="apple-touch-icon" href="../image/icon-192.png">
+  <link rel="manifest" href="../manifest.webmanifest">
+  <link rel="stylesheet" href="../css/trayecto.css?v=20260519f">
 </head>
 <body>
   <header class="horarios-header">
@@ -51,8 +57,9 @@
           <div class="form-group">
             <label for="origin-input">Parada origen</label>
             <div class="input-shell">
-              <input id="origin-input" class="combo-input" type="text" placeholder="Escribe o selecciona una parada" autocomplete="off" list="origin-options" required>
+              <input id="origin-input" class="combo-input" type="text" placeholder="Escribe o selecciona una parada" autocomplete="off" required>
               <datalist id="origin-options"></datalist>
+              <div id="origin-dropdown" class="combo-dropdown" role="listbox" hidden></div>
             </div>
           </div>
           <button type="button" id="swap-button" class="swap-btn" aria-label="Intercambiar paradas">
@@ -64,8 +71,9 @@
           <div class="form-group">
             <label for="destination-input">Parada destino</label>
             <div class="input-shell">
-              <input id="destination-input" class="combo-input" type="text" placeholder="Escribe o selecciona una parada" autocomplete="off" list="destination-options" required>
+              <input id="destination-input" class="combo-input" type="text" placeholder="Escribe o selecciona una parada" autocomplete="off" required>
               <datalist id="destination-options"></datalist>
+              <div id="destination-dropdown" class="combo-dropdown" role="listbox" hidden></div>
             </div>
           </div>
         </div>
@@ -174,8 +182,10 @@
 
 </main>
 
-<script src="../js/session.js"></script>
-<script src="../js/header.js"></script>
-<script src="../js/trayecto.js"></script>
+<script src="../config.local.js?v=20260519f"></script>
+<script src="../js/pwa-register.js?v=20260519f"></script>
+<script src="../js/session.js?v=20260519f"></script>
+<script src="../js/header.js?v=20260519f"></script>
+<script src="../js/trayecto.js?v=20260519f"></script>
 </body>
 </html>

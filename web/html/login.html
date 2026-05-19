@@ -3,16 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f5f97">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="EtxeBus">
   <title>Iniciar sesi&oacute;n - EtxeBus</title>
   <link rel="icon" type="image/png" href="../image/logo.png">
+  <link rel="apple-touch-icon" href="../image/icon-192.png">
+  <link rel="manifest" href="../manifest.webmanifest">
   <link rel="stylesheet" href="../css/login.css">
 </head>
 <body>
   <div class="login-wrapper">
     <div class="login-card">
-      <div class="avatar">
+      <a class="avatar avatar-link" href="principal.html" aria-label="Volver al inicio">
         <img src="../image/logo.png" alt="EtxeBus logo">
-      </div>
+      </a>
       <div class="form-box">
         <form id="login-form" novalidate>
           <div class="input-field">
@@ -55,6 +61,8 @@
     </div>
   </div>
 
+  <script src="../config.local.js"></script>
+  <script src="../js/pwa-register.js"></script>
   <script src="../js/session.js"></script>
   <script src="../js/login.js"></script>
 </body>

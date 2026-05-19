@@ -5,6 +5,13 @@
   --button-bg: #1a74bb;
   --button-bg-hover: #1d6bab;
   --header-height: 96px;
+  --viewport-height: 100vh;
+}
+
+@supports (height: 100dvh) {
+  :root {
+    --viewport-height: 100dvh;
+  }
 }
 
 * {
@@ -17,6 +24,7 @@ html, body {
 
 body {
   margin: 0;
+  min-height: var(--viewport-height);
   display: flex;
   flex-direction: column;
   background: var(--page-bg);
@@ -41,12 +49,25 @@ body {
   display: flex;
   align-items: center;
   gap: 16px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.main-header .brand,
+.main-header .brand:link,
+.main-header .brand:visited,
+.main-header .brand:hover,
+.main-header .brand:active {
+  color: #ffffff;
+  text-decoration: none;
 }
 
 .brand h1 {
   margin: 0;
   font-size: 32px;
   letter-spacing: 0.02em;
+  color: #ffffff;
+  text-decoration: none;
 }
 
 .logo {
@@ -133,7 +154,7 @@ body {
 
 .dashboard {
   flex: 1;
-  height: calc(100vh - var(--header-height));
+  height: calc(var(--viewport-height) - var(--header-height));
   display: grid;
   grid-template-columns: minmax(0, 2.4fr) minmax(240px, 1fr);
   gap: 40px;
@@ -147,12 +168,15 @@ body {
   display: flex;
   align-items: stretch;
   justify-content: stretch;
-  position: sticky;
-  top: 32px;
-  height: calc(100vh - var(--header-height) - 64px);
+  position: relative;
+  height: calc(var(--viewport-height) - var(--header-height) - 64px);
+  min-width: 0;
+  overflow: hidden;
 }
 
 #map {
+  position: relative;
+  z-index: 0;
   width: 100%;
   height: 100%;
   min-height: 420px;
@@ -165,6 +189,7 @@ body {
 .actions-panel {
   height: 100%;
   max-width: 320px;
+  min-width: 0;
   margin-left: auto;
   background: var(--card-bg);
   color: #ffffff;
@@ -178,6 +203,8 @@ body {
   align-self: stretch;
   max-height: 100%;
   overflow: visible;
+  position: relative;
+  z-index: 1;
 }
 
 .action {
@@ -250,9 +277,10 @@ body {
   }
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 1180px) {
   body {
     overflow-y: auto;
+    overflow-x: hidden;
   }
 
   .dashboard {
@@ -307,6 +335,25 @@ body {
 
   .action {
     width: 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  .brand h1 {
+    font-size: 28px;
+  }
+
+  .logo {
+    width: 56px;
+    height: 56px;
+  }
+
+  .dashboard {
+    padding: 18px;
+  }
+
+  .map-wrapper {
+    height: 340px;
   }
 }
 

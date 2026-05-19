@@ -87,3 +87,35 @@ Con el servidor estatico activo, abre [http://localhost:8080/html/principal.html
 - [http://localhost:8080/html/trayecto.html](http://localhost:8080/html/trayecto.html) para planificar trayectos.
 
 En modo local sin Nginx tambien puedes abrir los archivos dentro de `web/html` directamente en el navegador, pero recuerda mantener `api-gateway` arrancado para que las llamadas `fetch` funcionen.
+
+## 5) Soporte movil (PWA instalable)
+
+El frontend ahora incluye:
+
+- `manifest.webmanifest`
+- `service worker` (`web/sw.js`)
+- iconos de app (`web/image/icon-192.png` y `web/image/icon-512.png`)
+
+Esto permite instalar EtxeBus en movil como app web (Android/iOS).
+
+### Probar en movil (misma red WiFi)
+
+1. Arranca el stack (`docker compose up -d --build`).
+2. Desde tu PC, averigua tu IP local (por ejemplo `192.168.1.44`).
+3. En el movil abre: `http://192.168.1.44:8080/html/principal.html`.
+4. Instala la app desde el menu del navegador:
+   - Android (Chrome): `Anadir a pantalla de inicio` o `Instalar app`.
+   - iPhone/iPad (Safari): `Compartir -> Anadir a pantalla de inicio`.
+
+Nota: la configuracion web (`web/config.local.js`) calcula automaticamente la API como `http://<host-actual>:4000/api`, para que funcione desde movil sin hardcodear `localhost`.
+
+Si cambias assets estaticos y quieres forzar refresco de cache offline, incrementa `CACHE_VERSION` en `web/sw.js`.
+
+## 6) Versionado recomendado (web + movil)
+
+- Usa ramas por feature: `feature/pwa`, `feature/mobile-ui`, `feature/offline-cache`.
+- Etiqueta releases con SemVer:
+  - `v1.0.0`: release base web.
+  - `v1.1.0`: mejoras responsive.
+  - `v1.2.0`: PWA instalable.
+- Mantén un `CHANGELOG.md` con cambios de UX movil, caché y compatibilidad.

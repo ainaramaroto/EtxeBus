@@ -20,6 +20,17 @@ const isSameOriginRequest = (origin, hostHeader) => {
   }
 };
 
+const isSameHostRequest = (origin, hostHeader) => {
+  if (!origin || !hostHeader) return false;
+  try {
+    const originHost = new URL(origin).hostname.toLowerCase();
+    const requestHost = new URL(`http://${hostHeader}`).hostname.toLowerCase();
+    return originHost === requestHost;
+  } catch {
+    return false;
+  }
+};
+
 const corsOptionsDelegate = (req, callback) => {
   const origin = req.get('origin');
   const hostHeader = req.get('host');
@@ -28,7 +39,7 @@ const corsOptionsDelegate = (req, callback) => {
   if (!origin || isNullOrigin) {
     return callback(null, { origin: true, credentials: true }); // file:// o iframes sin origen
   }
-  if (isSameOriginRequest(origin, hostHeader)) {
+  if (isSameOriginRequest(origin, hostHeader) || isSameHostRequest(origin, hostHeader)) {
     return callback(null, { origin: true, credentials: true });
   }
   if (!config.allowedOrigins.length || config.allowedOrigins.includes(origin)) {

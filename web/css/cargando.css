@@ -2,6 +2,13 @@
   --page-bg: #f4ece9;
   --spinner-track: rgba(15, 95, 151, 0.12);
   --spinner-head: #2f8cda;
+  --viewport-height: 100vh;
+}
+
+@supports (height: 100dvh) {
+  :root {
+    --viewport-height: 100dvh;
+  }
 }
 
 * {
@@ -10,7 +17,7 @@
 
 body {
   margin: 0;
-  min-height: 100vh;
+  min-height: var(--viewport-height);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -67,5 +74,16 @@ body {
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 420px) {
+  .loading-wrapper {
+    gap: 34px;
+  }
+
+  .loading-logo {
+    width: 128px;
+    height: 128px;
   }
 }

@@ -226,6 +226,25 @@ const map = new mapboxgl.Map({
 
 window.ETXEBUS_MAIN_MAP = map;
 
+const scheduleMainMapResize = () => {
+  window.requestAnimationFrame(() => {
+    map.resize();
+  });
+};
+
+window.addEventListener('resize', scheduleMainMapResize);
+window.addEventListener('orientationchange', scheduleMainMapResize);
+
+if ('ResizeObserver' in window) {
+  const mapContainer = document.getElementById('map');
+  if (mapContainer && mapContainer.parentElement) {
+    const mainMapObserver = new ResizeObserver(() => {
+      scheduleMainMapResize();
+    });
+    mainMapObserver.observe(mapContainer.parentElement);
+  }
+}
+
 const ACTIVE_BOUNDS = VIEWPORT_LIMIT_BOUNDS || NETWORK_LIMIT_BOUNDS;
 if (ACTIVE_BOUNDS) {
   map.setMaxBounds(ACTIVE_BOUNDS);

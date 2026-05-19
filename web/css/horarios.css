@@ -7,6 +7,13 @@
   --brand-blue: #0f5f97;
   --brand-blue-dark: #0b3f6b;
   --header-height: 110px;
+  --viewport-height: 100vh;
+}
+
+@supports (height: 100dvh) {
+  :root {
+    --viewport-height: 100dvh;
+  }
 }
 
 * {
@@ -18,7 +25,7 @@ body {
   font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
   background-color: var(--page-bg);
   color: var(--text-color);
-  min-height: 100vh;
+  min-height: var(--viewport-height);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -43,6 +50,19 @@ body {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+}
+
+.horarios-header .brand:link,
+.horarios-header .brand:visited,
+.horarios-header .brand:hover,
+.horarios-header .brand:active {
+  color: #ffffff;
+  text-decoration: none;
+}
+
+.horarios-header .brand strong {
+  color: #ffffff;
+  text-decoration: none;
 }
 
 .horarios-header .brand img {
@@ -159,7 +179,7 @@ body {
 .horarios-main {
   flex: 1;
   min-height: 0;
-  height: calc(100vh - var(--header-height));
+  height: calc(var(--viewport-height) - var(--header-height));
   padding: 1rem clamp(1rem, 4vw, 2.25rem) 1.75rem;
   display: flex;
   flex-direction: column;
@@ -184,7 +204,7 @@ body {
 
 .schedule-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
   gap: 1.25rem;
   flex: 1;
   min-height: 0;
@@ -204,7 +224,7 @@ body {
   flex-direction: column;
   gap: 1rem;
   min-height: 280px;
-  max-height: calc(100vh - var(--header-height) - 40px);
+  max-height: calc(var(--viewport-height) - var(--header-height) - 40px);
   overflow-y: auto;
   scrollbar-gutter: stable both-edges;
   scrollbar-width: thin;
@@ -430,15 +450,38 @@ body {
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.25);
 }
 
-@media (max-width: 720px) {
+@media (max-width: 900px) {
+  body {
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
   .horarios-header {
     flex-direction: column;
-    padding: 1rem;
+    align-items: flex-start;
+    padding: 1rem 1.1rem;
+  }
+
+  .horarios-header nav {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 1rem;
   }
 
   .header-zone {
-    flex-wrap: wrap;
-    justify-content: center;
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .horarios-main {
+    height: auto;
+    overflow: visible;
+  }
+
+  .schedule-grid {
+    flex: none;
+    overflow: visible;
   }
 
   .schedule-card {
@@ -447,8 +490,43 @@ body {
     overflow: visible;
     scrollbar-width: auto;
   }
+}
+
+@media (max-width: 720px) {
+  .horarios-header {
+    flex-direction: column;
+    padding: 1rem;
+  }
+
+  .header-zone {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
 
   .schedule-card::-webkit-scrollbar {
     width: 6px;
+  }
+}
+
+@media (pointer: coarse) {
+  body {
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .horarios-main {
+    height: auto;
+    overflow: visible;
+  }
+
+  .schedule-grid {
+    flex: none;
+    overflow: visible;
+  }
+
+  .schedule-card {
+    max-height: none;
+    min-height: auto;
+    overflow: visible;
   }
 }

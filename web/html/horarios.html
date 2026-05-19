@@ -3,9 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f5f97">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="EtxeBus">
   <title>EtxeBus - Horarios</title>
   <link rel="icon" type="image/png" href="../image/logo.png">
-  <link rel="stylesheet" href="../css/horarios.css">
+  <link rel="apple-touch-icon" href="../image/icon-192.png">
+  <link rel="manifest" href="../manifest.webmanifest">
+  <link rel="stylesheet" href="../css/horarios.css?v=20260519d">
 </head>
 <body>
   <header class="horarios-header">
@@ -42,8 +48,10 @@
     <section class="schedule-grid" id="schedule-grid" aria-live="polite"></section>
   </main>
 
-  <script src="../js/session.js"></script>
-  <script src="../js/header.js"></script>
-  <script src="../js/horarios.js"></script>
+  <script src="../config.local.js?v=20260519d"></script>
+  <script src="../js/pwa-register.js?v=20260519d"></script>
+  <script src="../js/session.js?v=20260519d"></script>
+  <script src="../js/header.js?v=20260519d"></script>
+  <script src="../js/horarios.js?v=20260519d"></script>
 </body>
 </html>

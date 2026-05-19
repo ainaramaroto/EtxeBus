@@ -3,18 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f5f97">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="EtxeBus">
   <title>EtxeBus - Panel principal</title>
   <link rel="icon" type="image/png" href="../image/logo.png">
-  <link rel="stylesheet" href="../css/principal.css">
+  <link rel="apple-touch-icon" href="../image/icon-192.png">
+  <link rel="manifest" href="../manifest.webmanifest">
+  <link rel="stylesheet" href="../css/principal.css?v=20260519d">
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
 </head>
 <body>
   <header class="main-header">
-    <div class="brand">
+    <a class="brand" href="principal.html" aria-label="Volver al inicio">
       <img src="../image/logo.png" alt="EtxeBus logo" class="logo">
       <h1>EtxeBus</h1>
-    </div>
+    </a>
     <div class="header-zone">
       <a class="header-login-link" href="login.html" data-auth-guest aria-label="Ir a inicio de sesion">¿Desea iniciar sesión?</a>
       <div class="header-actions" data-auth-role="auth-controls" hidden>
@@ -69,12 +75,13 @@
     </aside>
   </main>
 
-  <script src="../config.local.js"></script>
-  <script src="../js/session.js"></script>
-  <script src="../js/header.js"></script>
-  <script src="../js/routes-precomputed.js"></script>
-  <script src="../js/mapa.js"></script>
-  <script src="../js/principal.js"></script>
+  <script src="../config.local.js?v=20260519d"></script>
+  <script src="../js/pwa-register.js?v=20260519d"></script>
+  <script src="../js/session.js?v=20260519d"></script>
+  <script src="../js/header.js?v=20260519d"></script>
+  <script src="../js/routes-precomputed.js?v=20260519d"></script>
+  <script src="../js/mapa.js?v=20260519d"></script>
+  <script src="../js/principal.js?v=20260519d"></script>
 
 </body>
 </html>

@@ -105,6 +105,8 @@ const originInput = document.getElementById('origin-input');
 const originOptions = document.getElementById('origin-options');
 const destinationInput = document.getElementById('destination-input');
 const destinationOptions = document.getElementById('destination-options');
+const originDropdown = document.getElementById('origin-dropdown');
+const destinationDropdown = document.getElementById('destination-dropdown');
 const whenSelect = document.getElementById('when-select');
 const timeWrapper = document.getElementById('time-wrapper');
 const timeInput = document.getElementById('time-input');
@@ -124,6 +126,7 @@ const favoriteButton = document.getElementById('favorite-button');
 const favoritesPanel = document.getElementById('favorites-panel');
 const favoritesListEl = document.getElementById('favorites-list');
 const favoritesCloseButton = document.getElementById('favorites-close');
+let activeComboInput = null;
 
 document.addEventListener('DOMContentLoaded', initPlanner);
 
@@ -155,6 +158,8 @@ async function initPlanner() {
     datePicker.addEventListener('click', (event) => event.stopPropagation());
     renderDatePicker();
   }
+  configureComboInput(originInput, originDropdown);
+  configureComboInput(destinationInput, destinationDropdown);
   syncTimeDisplays();
   originInput.addEventListener('input', handleOriginInput);
   originInput.addEventListener('change', handleOriginInput);
@@ -180,6 +185,16 @@ async function initPlanner() {
   if (favoritesListEl) {
     favoritesListEl.addEventListener('click', handleFavoritesListClick);
   }
+  if (originDropdown) {
+    originDropdown.addEventListener('mousedown', handleComboDropdownPointerDown);
+    originDropdown.addEventListener('click', handleComboDropdownClick);
+  }
+  if (destinationDropdown) {
+    destinationDropdown.addEventListener('mousedown', handleComboDropdownPointerDown);
+    destinationDropdown.addEventListener('click', handleComboDropdownClick);
+  }
+  document.addEventListener('click', handleOutsideComboDropdown);
+  document.addEventListener('keydown', handleComboKeydown);
   updateDestinationOptions();
   updateOriginOptions();
   updateFavoriteControl();
@@ -237,6 +252,156 @@ function populateStopOptions(inputEl, datalistEl, allowedLines = null, excludeSl
   });
 }
 
+function configureComboInput(inputEl, dropdownEl) {
+  if (!inputEl) return;
+  inputEl.setAttribute('role', 'combobox');
+  inputEl.setAttribute('aria-autocomplete', 'list');
+  inputEl.setAttribute('aria-expanded', 'false');
+  if (dropdownEl?.id) {
+    inputEl.setAttribute('aria-controls', dropdownEl.id);
+  }
+}
+
+function getComboContext(inputEl) {
+  if (inputEl === originInput) {
+    return { inputEl: originInput, datalistEl: originOptions, dropdownEl: originDropdown };
+  }
+  if (inputEl === destinationInput) {
+    return { inputEl: destinationInput, datalistEl: destinationOptions, dropdownEl: destinationDropdown };
+  }
+  return { inputEl, datalistEl: null, dropdownEl: null };
+}
+
+function getInputFromDropdown(dropdownEl) {
+  if (dropdownEl === originDropdown) return originInput;
+  if (dropdownEl === destinationDropdown) return destinationInput;
+  return null;
+}
+
+function buildDropdownItems(datalistEl, query) {
+  const normalizedQuery = query.trim().toLowerCase();
+  const items = Array.from(datalistEl.options)
+    .map((option) => ({
+      slug: option.dataset.choiceSlug || '',
+      label: option.value || '',
+    }))
+    .filter((item) => item.slug && item.label);
+  if (!normalizedQuery) {
+    return items;
+  }
+  return items.filter((item) => item.label.toLowerCase().includes(normalizedQuery));
+}
+
+function renderComboDropdown(inputEl) {
+  const { datalistEl, dropdownEl } = getComboContext(inputEl);
+  if (!inputEl || !datalistEl || !dropdownEl) return;
+
+  const items = buildDropdownItems(datalistEl, inputEl.value);
+  if (!items.length) {
+    const hasQuery = Boolean(inputEl.value.trim());
+    dropdownEl.innerHTML = hasQuery
+      ? '<p class="combo-dropdown__empty">Sin coincidencias</p>'
+      : '<p class="combo-dropdown__empty">Sin paradas disponibles</p>';
+    dropdownEl.hidden = false;
+    inputEl.setAttribute('aria-expanded', 'true');
+    activeComboInput = inputEl;
+    return;
+  }
+
+  dropdownEl.innerHTML = items
+    .map((item) => {
+      const isSelected = inputEl.dataset.choiceSlug === item.slug;
+      return `<button type="button" class="combo-dropdown__item${isSelected ? ' is-selected' : ''}" role="option" data-choice-slug="${item.slug}" aria-selected="${isSelected ? 'true' : 'false'}">${escapeHtml(item.label)}</button>`;
+    })
+    .join('');
+  dropdownEl.hidden = false;
+  inputEl.setAttribute('aria-expanded', 'true');
+  activeComboInput = inputEl;
+}
+
+function closeComboDropdown(inputEl = null) {
+  const inputs = inputEl ? [inputEl] : [originInput, destinationInput];
+  inputs.forEach((comboInput) => {
+    const { dropdownEl } = getComboContext(comboInput);
+    if (!comboInput || !dropdownEl) return;
+    dropdownEl.hidden = true;
+    comboInput.setAttribute('aria-expanded', 'false');
+  });
+  if (!inputEl || activeComboInput === inputEl) {
+    activeComboInput = null;
+  }
+}
+
+function syncComboDropdown(inputEl) {
+  if (document.activeElement === inputEl || activeComboInput === inputEl) {
+    renderComboDropdown(inputEl);
+    return;
+  }
+  closeComboDropdown(inputEl);
+}
+
+function normalizeComboInput(inputEl) {
+  if (inputEl.dataset.choiceSlug) {
+    const choice = STOP_CHOICE_MAP.get(inputEl.dataset.choiceSlug);
+    inputEl.value = choice ? choice.label : '';
+    return;
+  }
+  inputEl.value = '';
+}
+
+function handleComboDropdownPointerDown(event) {
+  event.preventDefault();
+}
+
+function selectComboChoice(inputEl, slug) {
+  const choice = STOP_CHOICE_MAP.get(slug);
+  if (!choice) {
+    return;
+  }
+  inputEl.value = choice.label;
+  inputEl.dataset.choiceSlug = choice.slug;
+  closeComboDropdown(inputEl);
+
+  if (inputEl === originInput) {
+    updateDestinationOptions();
+  } else if (inputEl === destinationInput) {
+    updateOriginOptions();
+  }
+  updateFavoriteControl();
+}
+
+function handleComboDropdownClick(event) {
+  const option = event.target.closest('[data-choice-slug]');
+  if (!option) return;
+  const inputEl = getInputFromDropdown(event.currentTarget);
+  if (!inputEl) return;
+  selectComboChoice(inputEl, option.dataset.choiceSlug);
+}
+
+function handleOutsideComboDropdown(event) {
+  const target = event.target;
+  [originInput, destinationInput].forEach((comboInput) => {
+    const shell = comboInput?.closest('.input-shell');
+    if (!shell || shell.contains(target)) return;
+    normalizeComboInput(comboInput);
+    closeComboDropdown(comboInput);
+  });
+}
+
+function handleComboKeydown(event) {
+  if (event.key === 'Escape') {
+    closeComboDropdown();
+    return;
+  }
+  if (event.key === 'ArrowDown') {
+    const inputEl = event.target;
+    if (inputEl !== originInput && inputEl !== destinationInput) return;
+    event.preventDefault();
+    activeComboInput = inputEl;
+    renderComboDropdown(inputEl);
+  }
+}
+
 function setupAuthTracking() {
   if (window.EtxebusSession && typeof window.EtxebusSession.subscribe === 'function') {
     window.EtxebusSession.subscribe(({ loggedIn }) => {
@@ -259,27 +424,33 @@ function setupAuthTracking() {
 function handleOriginInput() {
   syncInputSelection(originInput);
   updateDestinationOptions();
+  syncComboDropdown(originInput);
   updateFavoriteControl();
 }
 
 function handleDestinationInput() {
   syncInputSelection(destinationInput);
   updateOriginOptions();
+  syncComboDropdown(destinationInput);
   updateFavoriteControl();
 }
 
 function handleComboFocus(event) {
   event.target.select();
+  activeComboInput = event.target;
+  renderComboDropdown(event.target);
 }
 
 function handleComboBlur(event) {
   const input = event.target;
-  if (input.dataset.choiceSlug) {
-    const choice = STOP_CHOICE_MAP.get(input.dataset.choiceSlug);
-    input.value = choice ? choice.label : '';
-  } else {
-    input.value = '';
-  }
+  window.setTimeout(() => {
+    const { dropdownEl } = getComboContext(input);
+    if (dropdownEl && document.activeElement && dropdownEl.contains(document.activeElement)) {
+      return;
+    }
+    normalizeComboInput(input);
+    closeComboDropdown(input);
+  }, 120);
 }
 
 function syncInputSelection(inputEl) {
@@ -308,6 +479,7 @@ function updateDestinationOptions() {
   const allowed = getAllowedLineSet(originChoice);
   populateStopOptions(destinationInput, destinationOptions, allowed, originChoice?.slug || null);
   ensureChoiceAvailability(destinationInput, destinationOptions);
+  syncComboDropdown(destinationInput);
 }
 
 function updateOriginOptions() {
@@ -315,6 +487,7 @@ function updateOriginOptions() {
   const allowed = getAllowedLineSet(destinationChoice);
   populateStopOptions(originInput, originOptions, allowed, destinationChoice?.slug || null);
   ensureChoiceAvailability(originInput, originOptions);
+  syncComboDropdown(originInput);
 }
 
 function getAllowedLineSet(choice) {

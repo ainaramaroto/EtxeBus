@@ -523,6 +523,7 @@
     infoFabEl.className = 'info-fab';
     infoFabEl.setAttribute('aria-label', 'Informacion sobre el servicio EtxeBus');
     infoFabEl.setAttribute('aria-expanded', 'false');
+    infoFabEl.setAttribute('aria-pressed', 'false');
     infoFabEl.innerHTML = '<span>i</span>';
 
     infoBackdropEl = document.createElement('div');
@@ -591,6 +592,7 @@
       closeButton.addEventListener('click', () => toggleInfoOverlay(false));
     }
     infoFabEl.addEventListener('click', () => toggleInfoOverlay());
+    infoFabEl.addEventListener('touchstart', () => {}, { passive: true });
     infoBackdropEl.addEventListener('click', () => toggleInfoOverlay(false));
     document.addEventListener('click', (event) => {
       if (!infoPanelEl || infoPanelEl.hasAttribute('hidden')) return;
@@ -640,6 +642,8 @@
       infoPanelEl.removeAttribute('hidden');
       infoPanelEl.setAttribute('aria-hidden', 'false');
       infoFabEl.setAttribute('aria-expanded', 'true');
+      infoFabEl.setAttribute('aria-pressed', 'true');
+      infoFabEl.classList.add('is-open');
       if (infoBackdropEl) {
         infoBackdropEl.removeAttribute('hidden');
         infoBackdropEl.setAttribute('aria-hidden', 'false');
@@ -649,6 +653,8 @@
       infoPanelEl.setAttribute('hidden', '');
       infoPanelEl.setAttribute('aria-hidden', 'true');
       infoFabEl.setAttribute('aria-expanded', 'false');
+      infoFabEl.setAttribute('aria-pressed', 'false');
+      infoFabEl.classList.remove('is-open');
       if (infoBackdropEl) {
         infoBackdropEl.setAttribute('hidden', '');
         infoBackdropEl.setAttribute('aria-hidden', 'true');
@@ -786,7 +792,22 @@
         font-weight: 700;
         box-shadow: 0 20px 45px rgba(15, 95, 151, 0.4);
         cursor: pointer;
-        z-index: 80;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        -webkit-tap-highlight-color: transparent;
+        z-index: 82;
+      }
+      .info-fab:active {
+        transform: scale(0.95);
+        box-shadow: 0 10px 24px rgba(15, 95, 151, 0.38);
+      }
+      .info-fab:focus-visible {
+        outline: 3px solid rgba(255, 255, 255, 0.7);
+        outline-offset: 3px;
+      }
+      .info-fab.is-open {
+        background: #0b4f80;
+        transform: translateY(-2px);
+        box-shadow: 0 22px 52px rgba(7, 47, 79, 0.55);
       }
       .info-fab span {
         font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
@@ -808,7 +829,7 @@
         position: fixed;
         inset: 0;
         background: rgba(8, 20, 40, 0.35);
-        z-index: 80;
+        z-index: 79;
       }
       .info-backdrop[hidden] {
         display: none;
@@ -816,8 +837,14 @@
       @media (max-width: 720px) {
         .info-panel {
           top: auto;
+          left: 1rem;
+          right: 1rem;
+          width: auto;
+          max-width: none;
           transform: none;
           bottom: calc(clamp(0.5rem, 3vw, 1.5rem) + 80px);
+          max-height: min(68vh, 640px);
+          overflow-y: auto;
         }
       }
       .info-panel[hidden] {

@@ -5,6 +5,13 @@
   --secondary-gradient: linear-gradient(180deg, #86aed3 0%, #587ea8 100%);
   --input-bg: rgba(255, 255, 255, 0.92);
   --icon-color: #0a355a;
+  --viewport-height: 100vh;
+}
+
+@supports (height: 100dvh) {
+  :root {
+    --viewport-height: 100dvh;
+  }
 }
 
 * {
@@ -13,7 +20,7 @@
 
 body {
   margin: 0;
-  min-height: 100vh;
+  min-height: var(--viewport-height);
   font-family: "Segoe UI", sans-serif;
   background: var(--page-bg);
   display: flex;
@@ -57,6 +64,15 @@ body {
   align-items: center;
   justify-content: center;
   box-shadow: none;
+}
+
+.avatar-link {
+  text-decoration: none;
+}
+
+.avatar-link:focus-visible {
+  outline: 3px solid rgba(255, 255, 255, 0.75);
+  outline-offset: 4px;
 }
 
 .avatar img {
@@ -290,5 +306,22 @@ body {
 
   .secondary {
     width: 80%;
+  }
+}
+
+@media (max-width: 380px) {
+  .login-wrapper {
+    padding: 48px 10px;
+  }
+
+  .avatar {
+    width: 160px;
+    height: 160px;
+    top: -82px;
+  }
+
+  .login-card {
+    padding: 70px 18px 84px;
+    border-radius: 24px;
   }
 }
