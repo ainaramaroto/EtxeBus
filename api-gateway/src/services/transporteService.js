@@ -113,6 +113,11 @@ async function eliminarTrayectoParada(routeId, stopId) {
   return unwrap(data);
 }
 
+async function healthTransporte() {
+  const { data } = await client.get('/health');
+  return unwrap(data);
+}
+
 module.exports = {
   listLineas,
   obtenerLinea,
@@ -134,4 +139,5 @@ module.exports = {
   crearTrayectoParada,
   actualizarTrayectoParada,
   eliminarTrayectoParada,
+  healthTransporte,
 };

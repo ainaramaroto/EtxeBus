@@ -48,6 +48,11 @@ async function logoutUsuario(payload = {}) {
   return unwrap(data);
 }
 
+async function healthUsuarios() {
+  const { data } = await client.get('/health');
+  return unwrap(data);
+}
+
 module.exports = {
   listUsuarios,
   obtenerUsuario,
@@ -56,4 +61,5 @@ module.exports = {
   eliminarUsuario,
   loginUsuario,
   logoutUsuario,
+  healthUsuarios,
 };

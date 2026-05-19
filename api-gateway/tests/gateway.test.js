@@ -4,6 +4,7 @@ jest.mock('../src/services/usuariosService', () => ({
   listUsuarios: jest.fn(),
   loginUsuario: jest.fn(),
   logoutUsuario: jest.fn(),
+  healthUsuarios: jest.fn(),
 }));
 
 jest.mock('../src/services/favoritosService', () => ({
@@ -16,6 +17,7 @@ jest.mock('../src/services/favoritosService', () => ({
 
 jest.mock('../src/services/transporteService', () => ({
   listLineas: jest.fn(),
+  healthTransporte: jest.fn(),
 }));
 
 jest.mock('../src/services/metroService', () => ({
@@ -47,6 +49,53 @@ describe('api-gateway tests basicos', () => {
       status: 'ok',
       service: 'api-gateway',
     });
+  });
+
+  test('GET /api/health/dependencies devuelve estado agregado de microservicios', async () => {
+    usuariosService.healthUsuarios.mockResolvedValue({
+      status: 'ok',
+      service: 'microservicio-usuarios',
+    });
+    transporteService.healthTransporte.mockResolvedValue({
+      status: 'ok',
+      service: 'microservicioTransporte',
+    });
+
+    const response = await request(app).get('/api/health/dependencies');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      status: 'ok',
+      service: 'api-gateway',
+      dependencies: {
+        usuarios: {
+          status: 'ok',
+          service: 'microservicio-usuarios',
+        },
+        transporte: {
+          status: 'ok',
+          service: 'microservicioTransporte',
+        },
+      },
+    });
+  });
+
+  test('GET /api/health/dependencies devuelve 502 si un microservicio no responde', async () => {
+    usuariosService.healthUsuarios.mockRejectedValue(
+      buildError(504, 'No se obtuvo respuesta del microservicio')
+    );
+    transporteService.healthTransporte.mockResolvedValue({
+      status: 'ok',
+      service: 'microservicioTransporte',
+    });
+
+    const response = await request(app).get('/api/health/dependencies');
+
+    expect(response.status).toBe(502);
+    expect(response.body.status).toBe('degraded');
+    expect(response.body.dependencies.usuarios.status).toBe('error');
+    expect(response.body.dependencies.usuarios.message).toContain('No se obtuvo respuesta');
+    expect(response.body.dependencies.transporte.status).toBe('ok');
   });
 
   test('GET /api/usuarios devuelve usuarios desde el servicio mockeado', async () => {

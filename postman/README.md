@@ -2,6 +2,14 @@
 
 Coleccion:
 - `EtxeBus-TFG.postman_collection.json`
+- `EtxeBus-TFG-organizada.postman_collection.json` (version recomendada para memoria/defensa)
+
+Carpetas de la coleccion organizada:
+- `Health checks`
+- `Gateway`
+- `Usuarios`
+- `Transporte`
+- `Errores`
 
 ## Orden sugerido de demostracion
 1. Health checks (gateway, usuarios, transporte).

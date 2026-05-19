@@ -1,287 +1,194 @@
-# Sistema de pruebas base para EtxeBus (TFG)
+# EtxeBus - Sistema de pruebas TFG (estado final)
 
-## 1) Analisis inicial
+## 1) Cobertura automatizada
 
-### Estructura detectada
-- `api-gateway` (Node.js + Express)
-- `microservicioUsuarios` (Node.js + Express + MongoDB)
-- `microservicioTransporte` (FastAPI + SQLAlchemy + PostgreSQL)
-- `web` (frontend estatico)
-- `docker-compose.yml`
+### 1.1 Node.js (`api-gateway`, `microservicioUsuarios`)
 
-### Endpoints principales detectados
+Estado revisado:
+- Jest: presente en ambos servicios.
+- c8: presente en ambos servicios.
+- Scripts `test` y `coverage`: presentes y funcionando.
+- `.c8rc.json`: presente en ambos servicios con `report-dir: coverage`.
 
-#### api-gateway
-- `GET /api/health`
-- `GET /api/`
-- `GET /api/usuarios`
-- `GET /api/usuarios/:id`
-- `POST /api/usuarios`
-- `PUT /api/usuarios/:id`
-- `DELETE /api/usuarios/:id`
-- `POST /api/usuarios/login`
-- `POST /api/usuarios/logout`
-- `GET /api/favoritos`
-- `GET /api/favoritos/:id`
-- `POST /api/favoritos`
-- `PUT /api/favoritos/:id`
-- `DELETE /api/favoritos/:id`
-- `GET /api/lineas`
-- `GET /api/lineas/:id`
-- `POST /api/lineas`
-- `PUT /api/lineas/:id`
-- `DELETE /api/lineas/:id`
-- `GET /api/paradas`
-- `GET /api/paradas/:id`
-- `POST /api/paradas`
-- `PUT /api/paradas/:id`
-- `DELETE /api/paradas/:id`
-- `GET /api/trayectos`
-- `GET /api/trayectos/:id`
-- `POST /api/trayectos`
-- `PUT /api/trayectos/:id`
-- `DELETE /api/trayectos/:id`
-- `GET /api/trayectos-paradas`
-- `GET /api/trayectos-paradas/:routeId/:stopId`
-- `POST /api/trayectos-paradas`
-- `PUT /api/trayectos-paradas/:routeId/:stopId`
-- `DELETE /api/trayectos-paradas/:routeId/:stopId`
-- `GET /api/horarios`
-- `GET /api/horarios/publicados`
-- `GET /api/horarios/:id`
-- `POST /api/horarios`
-- `PUT /api/horarios/:id`
-- `DELETE /api/horarios/:id`
-- `GET /api/metro/etxebarri`
+Scripts activos en ambos `package.json`:
 
-#### microservicioUsuarios
-- `GET /health`
-- `GET /usuarios`
-- `GET /usuarios/:id`
-- `POST /usuarios`
-- `PUT /usuarios/:id`
-- `DELETE /usuarios/:id`
-- `POST /auth/login`
-- `POST /auth/logout`
-- `GET /favoritos`
-- `GET /favoritos/:id`
-- `POST /favoritos`
-- `PUT /favoritos/:id`
-- `DELETE /favoritos/:id`
+```json
+"scripts": {
+  "start": "node src/server.js",
+  "dev": "nodemon src/server.js",
+  "test": "jest --runInBand",
+  "coverage": "c8 --reporter=text --reporter=html npm test"
+}
+```
 
-#### microservicioTransporte
-- `GET /`
-- `GET /health`
-- `GET /lineas/`
-- `GET /lineas/{line_id}`
-- `POST /lineas/`
-- `PUT /lineas/{line_id}`
-- `DELETE /lineas/{line_id}`
-- `GET /paradas/`
-- `GET /paradas/{stop_id}`
-- `POST /paradas/`
-- `PUT /paradas/{stop_id}`
-- `DELETE /paradas/{stop_id}`
-- `GET /trayectos/`
-- `GET /trayectos/{route_id}`
-- `POST /trayectos/`
-- `PUT /trayectos/{route_id}`
-- `DELETE /trayectos/{route_id}`
-- `GET /trayectos-paradas/`
-- `GET /trayectos-paradas/{route_id}/{stop_id}`
-- `POST /trayectos-paradas/`
-- `PUT /trayectos-paradas/{route_id}/{stop_id}`
-- `DELETE /trayectos-paradas/{route_id}/{stop_id}`
-- `GET /horarios/`
-- `GET /horarios/publicados`
-- `GET /horarios/{schedule_id}`
-- `POST /horarios/`
-- `PUT /horarios/{schedule_id}`
-- `DELETE /horarios/{schedule_id}`
-- `GET /favoritos/`
-- `POST /favoritos/`
-- `DELETE /favoritos/{favorite_id}`
+Nota:
+- En `api-gateway` existe ademas `seed:test-user` y se mantiene igual.
+- En PowerShell de Windows usar `npm.cmd` para evitar bloqueo de `npm.ps1`.
 
-### Health checks
-- `api-gateway`: existia, se completo con `service`.
-- `microservicioUsuarios`: existia, se completo con `service`.
-- `microservicioTransporte`: faltaba `/health`, se anadio.
+Comandos exactos:
 
-Formato unificado:
-- `{"status":"ok","service":"nombre-servicio"}`
+```powershell
+cd api-gateway
+npm.cmd test
+npm.cmd run coverage
 
-### Dependencias actuales relevantes
+cd ..\microservicioUsuarios
+npm.cmd test
+npm.cmd run coverage
+```
 
-#### api-gateway/package.json
-- runtime: `express`, `axios`, `cors`, `helmet`, `morgan`, etc.
-- testing (anadidas): `jest`, `supertest`, `c8`.
-
-#### microservicioUsuarios/package.json
-- runtime: `express`, `mongoose`, `cors`, `helmet`, `morgan`, etc.
-- testing (anadidas): `jest`, `supertest`, `c8`.
-
-#### microservicioTransporte/requirements.txt
-- runtime principal: `fastapi`, `uvicorn`, `sqlalchemy`, `psycopg2-binary`, `pydantic`, `pydantic-settings`, etc.
-- desarrollo: nuevo `requirements-dev.txt` con `pytest`, `pytest-cov`.
-
-### Carpetas tests
-- No habia carpetas `tests/` propias en los 3 servicios.
-- Ahora existen:
-  - `api-gateway/tests`
-  - `microservicioUsuarios/tests`
-  - `microservicioTransporte/tests`
-
-## 2) Tests Node.js / Express
-
-### Herramientas
-- `Jest`
-- `Supertest`
-- `c8`
-
-### Cobertura implementada
-
-#### api-gateway
-- tests creados en `api-gateway/tests/gateway.test.js`
-- cobertura de:
-  - `GET /api/health`
-  - endpoint principal `GET /api/usuarios`
-  - errores `400`, `401`, `404`, `500`, `502`
-- mocks simples de servicios:
-  - `usuariosService`
-  - `favoritosService`
-  - `transporteService`
-
-#### microservicioUsuarios
-- tests creados en `microservicioUsuarios/tests/usuarios.test.js`
-- cobertura de:
-  - `GET /health`
-  - endpoints principales (`/usuarios`, `/auth/login`, `/auth/logout`, `/favoritos`)
-  - errores `400`, `401`, `404`, `500`
-- mocks simples de modelos Mongo:
-  - `UsuarioModel`
-  - `PreferenciaModel`
-
-### Scripts anadidos
-
-#### api-gateway/package.json
-- `npm test`
-- `npm run coverage`
-
-#### microservicioUsuarios/package.json
-- `npm test`
-- `npm run coverage`
-
-### Configuracion c8
-- `api-gateway/.c8rc.json`
-- `microservicioUsuarios/.c8rc.json`
-
-Genera:
-- reporte consola
-- reporte HTML en `coverage/`
-
-## 3) Tests FastAPI / Python
-
-### Herramientas
-- `pytest`
-- `TestClient` de FastAPI
-- `pytest-cov`
-
-### Tests creados
-- `microservicioTransporte/tests/conftest.py`
-- `microservicioTransporte/tests/test_api.py`
-
-### Cobertura de pruebas
-- health check: `GET /health`
-- endpoints principales:
-  - lineas
-  - paradas
-  - rutas (trayectos)
-  - horarios
-  - favoritos
-- errores cubiertos:
-  - `400`
-  - `404`
-  - `422`
-  - `500`
-
-### Nota tecnica de entorno local
-- Para pruebas locales se fuerza DB SQLite en test (`TRANSPORTE_DATABASE_URL=sqlite://`) para no depender de PostgreSQL real.
-- Se evita el startup pesado en tests sobreescribiendo temporalmente `app.router.lifespan_context`.
-
-## 4) Comandos exactos
-
-### Node - api-gateway
-1. `cd api-gateway`
-2. `npm install`
-3. `npm.cmd test`
-4. `npm.cmd run coverage`
-
-### Node - microservicioUsuarios
-1. `cd microservicioUsuarios`
-2. `npm install`
-3. `npm.cmd test`
-4. `npm.cmd run coverage`
-
-### Python - microservicioTransporte
-1. `cd microservicioTransporte`
-2. `py -3.14 -m pip install -r requirements-dev.txt`
-3. `py -3.14 -m pip install --upgrade "anyio>=4.11,<5"`
-4. `py -3.14 -m pytest`
-5. `py -3.14 -m pytest --cov=app`
-6. `py -3.14 -m pytest --cov=app --cov-report=html`
-
-### Abrir reportes HTML
-- Node:
+Salida esperada:
+- Cobertura en consola (tabla por archivo).
+- Reporte HTML en:
   - `api-gateway/coverage/index.html`
   - `microservicioUsuarios/coverage/index.html`
-- Python:
+
+Carpetas generadas:
+- `coverage/` (en cada microservicio Node)
+
+---
+
+### 1.2 FastAPI / Python (`microservicioTransporte`)
+
+Estado revisado:
+- `pytest`: presente.
+- `pytest-cov`: presente en `requirements-dev.txt`.
+- `pytest.ini`: presente y correcto (`testpaths = tests`).
+
+`requirements-dev.txt` actual:
+
+```txt
+-r requirements.txt
+anyio>=4.11,<5
+pytest==8.3.5
+pytest-cov==5.0.0
+httpx==0.28.1
+```
+
+Comandos exactos:
+
+```powershell
+cd microservicioTransporte
+py -3.14 -m pytest
+py -3.14 -m pytest --cov=app
+py -3.14 -m pytest --cov=app --cov-report=html
+```
+
+Salida esperada:
+- Ejecucion de tests en consola.
+- Cobertura en consola.
+- HTML de cobertura en:
   - `microservicioTransporte/htmlcov/index.html`
 
-## 5) Docker y prueba global
+Carpetas generadas:
+- `htmlcov/`
+- `.pytest_cache/`
 
-### Orden recomendado
-1. `docker compose up --build -d`
-2. comprobar estado de servicios:
-   - `docker compose ps`
-3. comprobar health checks:
-   - `curl http://localhost:4000/api/health`
-   - `curl http://localhost:3000/health`
-   - `curl http://localhost:5000/health`
-4. comprobar gateway funcional:
-   - `curl http://localhost:4000/api/lineas`
-5. comprobar frontend:
-   - abrir `http://localhost:8080/html/principal.html`
+## 2) Health checks
 
-### Peticion funcional basica recomendada
-- `POST http://localhost:4000/api/usuarios/login` (via Postman)
+### Endpoints `GET /health`
 
-### Apagado
-- `docker compose down`
+- API Gateway: `GET /api/health`
+- Microservicio Usuarios: `GET /health`
+- Microservicio Transporte: `GET /health`
 
-## 6) Postman
+Formato estandar:
 
-Coleccion preparada:
+```json
+{
+  "status": "ok",
+  "service": "nombre-servicio"
+}
+```
+
+### Health agregado en gateway (nuevo)
+
+Endpoint anadido:
+- `GET /api/health/dependencies`
+
+Funcion:
+- Consulta salud de usuarios y transporte.
+- Devuelve `200` si ambos estan `ok`.
+- Devuelve `502` con `status: degraded` si alguna dependencia falla.
+
+Respuesta ejemplo OK:
+
+```json
+{
+  "status": "ok",
+  "service": "api-gateway",
+  "dependencies": {
+    "usuarios": { "status": "ok", "service": "microservicio-usuarios" },
+    "transporte": { "status": "ok", "service": "microservicioTransporte" }
+  }
+}
+```
+
+## 3) Postman (uso recomendado para defensa)
+
+Colecciones disponibles:
 - `postman/EtxeBus-TFG.postman_collection.json`
+- `postman/EtxeBus-TFG-organizada.postman_collection.json` (recomendada)
 
-Carpetas incluidas:
-- `01 Health Checks`
-- `02 Auth y Usuarios`
-- `03 Favoritos`
-- `04 Lineas`
-- `05 Paradas`
-- `06 Rutas (Trayectos)`
-- `07 Horarios`
-- `08 Errores Esperados`
+Carpetas de la coleccion organizada:
+- `Health checks`
+- `Gateway`
+- `Usuarios`
+- `Transporte`
+- `Errores`
 
-Errores contemplados en coleccion:
-- 400
-- 401
-- 404
-- 502
+Endpoints clave a ensenar:
+- Login/autenticacion:
+  - `POST /api/usuarios/login`
+  - `POST /auth/login`
+- Usuarios:
+  - `GET /api/usuarios`, `GET /usuarios`, `POST /usuarios`
+- Favoritos:
+  - `GET /api/favoritos?idUsuario=...`
+  - `POST /api/favoritos`
+- Transporte funcional:
+  - `GET /api/lineas`, `GET /api/paradas`, `GET /api/trayectos`, `GET /api/horarios/publicados`
+- Health:
+  - `/api/health`, `/api/health/dependencies`, `/health` (usuarios/transporte)
+- Errores:
+  - `400` (`/usuarios/abc`)
+  - `401` (login invalido)
+  - `404` (`/api/no-existe`)
+  - `502` (`/api/health/dependencies` con dependencia caida)
 
-## 7) Estructura de evidencias para memoria
+## 4) Prueba global con Docker
 
-Recomendado guardar en:
+## Comandos
+
+```powershell
+docker compose up -d --build
+docker compose ps
+
+curl.exe -s http://localhost:4000/api/health
+curl.exe -s http://localhost:4000/api/health/dependencies
+curl.exe -s http://localhost:3000/health
+curl.exe -s http://localhost:5000/health
+curl.exe -s http://localhost:4000/api/lineas
+curl.exe -s -o NUL -w "%{http_code}" http://localhost:8080/html/principal.html
+```
+
+Orden de validacion:
+1. `docker compose ps` (todos `Up`).
+2. Health checks de los 3 servicios.
+3. Health agregado del gateway.
+4. Peticion funcional via gateway (`/api/lineas`).
+5. Frontend accesible (`200` en `principal.html`).
+
+Logs utiles para memoria:
+- `docker compose ps`
+- `docker compose logs --tail=50 api_gateway`
+- `docker compose logs --tail=50 microservicio_usuarios`
+- `docker compose logs --tail=50 microservicio_transporte`
+
+## 5) Organizacion final de pruebas y evidencias
+
+Estructura recomendada:
+
 - `api-gateway/tests/`
 - `microservicioUsuarios/tests/`
 - `microservicioTransporte/tests/`
@@ -291,30 +198,25 @@ Recomendado guardar en:
 - `postman/`
 - `docs/evidencias/`
 
-En `docs/evidencias/` guardar:
-- capturas de `npm test`
-- capturas de `npm run coverage`
-- capturas de `python -m pytest`
-- capturas de `python -m pytest --cov=app`
-- capturas de Docker (`docker compose ps`, logs de arranque)
-- capturas de health checks por servicio
-- capturas de llamadas clave en Postman
+Guardar en `docs/evidencias/`:
+- Captura `npm.cmd test` (gateway y usuarios).
+- Captura `npm.cmd run coverage` (tabla y % totales).
+- Captura `py -3.14 -m pytest`.
+- Captura `py -3.14 -m pytest --cov=app`.
+- Captura HTML coverage Node y Python.
+- Captura `docker compose ps`.
+- Capturas de `curl` o Postman en health y endpoints funcionales.
+- Capturas de errores 400/401/404/502.
 
-## 8) Capturas recomendadas (memoria)
-- Resultado de `npm test` en `api-gateway`.
-- Resultado de `npm run coverage` en `api-gateway` (tabla de cobertura).
-- Resultado de `npm test` en `microservicioUsuarios`.
-- Resultado de `npm run coverage` en `microservicioUsuarios`.
-- Resultado de `python -m pytest` en `microservicioTransporte`.
-- Resultado de `python -m pytest --cov=app` en `microservicioTransporte`.
-- Pantalla del HTML report `coverage/index.html` (Node).
-- Pantalla del HTML report `htmlcov/index.html` (Python).
-- `docker compose ps` con servicios `Up`.
-- `curl`/Postman de `/health` de cada servicio.
-- 1 ejemplo de error 400, 401, 404 y 502 en Postman.
+## 6) Resumen de cumplimiento TFG
 
-## 9) Valoracion para TFG
-- El sistema es basico, solido y defendible para TFG.
-- Cubre casos felices y errores tipicos sin sobre-ingenieria.
-- No exige BD real en tests de desarrollo.
-- Genera evidencia objetiva: tests automatizados + cobertura + pruebas funcionales manuales en Postman + validacion global en Docker.
+Estado final:
+- Tests automatizados en los 3 servicios: OK.
+- Cobertura Node con HTML: OK.
+- Cobertura FastAPI con HTML: OK.
+- Health checks unificados: OK.
+- Health agregado de dependencias en gateway: OK.
+- Postman organizado para defensa: OK.
+- Flujo Docker global verificable: OK.
+
+Este nivel es realista, defendible y profesional para un TFG sin sobre-ingenieria.
