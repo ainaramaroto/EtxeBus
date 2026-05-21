@@ -2,16 +2,39 @@
 
 const API_BASE_URL = window.ETXEBUS_API_BASE || 'http://localhost:4000/api';
 
+function getCurrentSessionAuth() {
+  const user = window.EtxebusSession?.getUser?.();
+  const authHeader = window.EtxebusSession?.getAuthorizationHeader?.();
+  if (!user || !authHeader) return null;
+
+  const idUsuario = Number(user.idUsuario ?? user.id);
+  if (!Number.isFinite(idUsuario)) return null;
+
+  return {
+    idUsuario,
+    authHeader,
+  };
+}
+
 async function cargarUsuariosDestacados() {
+  const auth = getCurrentSessionAuth();
+  if (!auth) {
+    return;
+  }
+
   try {
-    const respuesta = await fetch(`${API_BASE_URL}/usuarios`);
+    const respuesta = await fetch(`${API_BASE_URL}/usuarios/${auth.idUsuario}`, {
+      headers: {
+        Authorization: auth.authHeader,
+      },
+    });
     if (!respuesta.ok) {
-      throw new Error(`Error ${respuesta.status} al solicitar usuarios`);
+      throw new Error(`Error ${respuesta.status} al solicitar usuario`);
     }
     const { data } = await respuesta.json();
-    console.info('Usuarios disponibles desde el API Gateway', data);
+    console.info('Usuario autenticado desde el API Gateway', data);
   } catch (error) {
-    console.warn('No se pudo recuperar la informacion de usuarios:', error.message);
+    console.warn('No se pudo recuperar la informacion del usuario:', error.message);
   }
 }
 

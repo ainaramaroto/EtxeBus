@@ -1,10 +1,10 @@
-const CACHE_VERSION = "etxebus-v9";
+const CACHE_VERSION = "etxebus-v13";
 const SHELL_CACHE = `etxebus-shell-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `etxebus-runtime-${CACHE_VERSION}`;
 
 const SHELL_ASSETS = [
   "/manifest.webmanifest",
-  "/config.local.js",
+  "/config.local.js?v=20260521c",
   "/html/cargando.html",
   "/html/principal.html",
   "/html/lineas.html",
@@ -18,18 +18,18 @@ const SHELL_ASSETS = [
   "/css/horarios.css",
   "/css/trayecto.css",
   "/css/login.css",
-  "/js/pwa-register.js",
-  "/js/session.js",
-  "/js/header.js",
-  "/js/cargando.js",
-  "/js/principal.js",
-  "/js/lineas.js",
-  "/js/horarios.js",
-  "/js/trayecto.js",
-  "/js/login.js",
-  "/js/registar.js",
-  "/js/mapa.js",
-  "/js/routes-precomputed.js",
+  "/js/pwa-register.js?v=20260521c",
+  "/js/session.js?v=20260521c",
+  "/js/header.js?v=20260521c",
+  "/js/cargando.js?v=20260521c",
+  "/js/principal.js?v=20260521c",
+  "/js/lineas.js?v=20260521c",
+  "/js/horarios.js?v=20260521c",
+  "/js/trayecto.js?v=20260521c",
+  "/js/login.js?v=20260521c",
+  "/js/registar.js?v=20260521c",
+  "/js/mapa.js?v=20260521c",
+  "/js/routes-precomputed.js?v=20260521c",
   "/image/logo.png",
   "/image/icon-192.png",
   "/image/icon-512.png"

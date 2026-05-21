@@ -43,6 +43,21 @@
   let profileSuccessEl;
   let profileFormEl;
 
+  function buildAuthHeaders(baseHeaders = {}, credentials = null) {
+    const headers = { ...baseHeaders };
+    const sessionHeader = window.EtxebusSession?.getAuthorizationHeader?.();
+    const fallbackHeader = credentials?.token
+      ? `${credentials.tokenType || 'Bearer'} ${credentials.token}`
+      : null;
+    const authorization = sessionHeader || fallbackHeader;
+
+    if (authorization) {
+      headers.Authorization = authorization;
+    }
+
+    return headers;
+  }
+
   function openDocOverlay(docUrl, docTitle) {
     if (!docUrl || !docOverlayEl || !docIframeEl) return;
     docIframeEl.src = docUrl;
@@ -173,7 +188,9 @@
       const params = new URLSearchParams({
         idUsuario: credentials.idUsuario,
       });
-      const response = await fetch(`${API_BASE_URL}/favoritos?${params.toString()}`);
+      const response = await fetch(`${API_BASE_URL}/favoritos?${params.toString()}`, {
+        headers: buildAuthHeaders({}, credentials),
+      });
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
@@ -247,7 +264,10 @@
       });
       const response = await fetch(
         `${API_BASE_URL}/favoritos/${favoriteId}?${params.toString()}`,
-        { method: 'DELETE' },
+        {
+          method: 'DELETE',
+          headers: buildAuthHeaders({}, credentials),
+        },
       );
       if (!response.ok && response.status !== 404) {
         throw new Error(`HTTP ${response.status}`);
@@ -279,10 +299,14 @@
       if (!user || typeof user !== 'object') return null;
       const id = Number(user.idUsuario ?? user.id);
       if (!Number.isFinite(id)) return null;
+      const token = String(user.token || user.accessToken || '').trim();
+      if (!token) return null;
       return {
         idUsuario: id,
         nomUsuario: user.nomUsuario || '',
         email: user.email || '',
+        token,
+        tokenType: user.tokenType || 'Bearer',
       };
     };
 
@@ -460,9 +484,13 @@
   }
 
   async function updatePassword(idUsuario, contrasenia) {
+    const credentials = getCurrentUserCredentials();
     const response = await fetch(`${API_BASE_URL}/usuarios/${idUsuario}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: buildAuthHeaders(
+        { 'Content-Type': 'application/json' },
+        credentials
+      ),
       body: JSON.stringify({ contrasenia }),
     });
     let payload = null;
@@ -484,10 +512,14 @@
     const requestOptions = {
       method: 'POST',
       keepalive: true,
+      headers: buildAuthHeaders({}, user),
     };
 
     if (payload) {
-      requestOptions.headers = { 'Content-Type': 'application/json' };
+      requestOptions.headers = buildAuthHeaders(
+        { 'Content-Type': 'application/json' },
+        user
+      );
       requestOptions.body = JSON.stringify(payload);
     }
 

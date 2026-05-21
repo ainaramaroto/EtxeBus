@@ -59,6 +59,20 @@ const swaggerSpec = {
         description:
           'Puedes autenticar por email o nomUsuario; envia cualquiera de los dos junto con la contrasenia.',
       },
+      AuthenticatedUsuario: {
+        allOf: [
+          { $ref: '#/components/schemas/Usuario' },
+          {
+            type: 'object',
+            properties: {
+              token: { type: 'string', example: '<jwt-token>' },
+              tokenType: { type: 'string', example: 'Bearer' },
+              expiresIn: { type: 'integer', example: 3600 },
+            },
+            required: ['token', 'tokenType', 'expiresIn'],
+          },
+        ],
+      },
       Preferencia: {
         type: 'object',
         properties: {
@@ -297,7 +311,9 @@ const swaggerSpec = {
               'application/json': {
                 schema: {
                   type: 'object',
-                  properties: { data: { $ref: '#/components/schemas/Usuario' } },
+                  properties: {
+                    data: { $ref: '#/components/schemas/AuthenticatedUsuario' },
+                  },
                 },
               },
             },

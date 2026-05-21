@@ -1,8 +1,10 @@
 const express = require('express');
 const Usuario = require('../../data/usuario');
 const UsuarioModel = require('../models/usuarioModel');
+const config = require('../config');
 const asyncHandler = require('../utils/asyncHandler');
 const httpError = require('../utils/httpError');
+const { signJwt } = require('../utils/jwt');
 
 const router = express.Router();
 
@@ -37,7 +39,26 @@ router.post(
       throw httpError(401, 'Credenciales invalidas');
     }
 
-    res.json({ data: usuarioEncontrado.toJSON() });
+    const user = usuarioEncontrado.toJSON();
+    const { token } = signJwt(
+      {
+        sub: String(user.idUsuario),
+        idUsuario: user.idUsuario,
+        nomUsuario: user.nomUsuario,
+        email: user.email,
+      },
+      config.jwtSecret,
+      { expiresInSeconds: config.jwtExpiresInSeconds }
+    );
+
+    res.json({
+      data: {
+        ...user,
+        token,
+        tokenType: 'Bearer',
+        expiresIn: config.jwtExpiresInSeconds,
+      },
+    });
   })
 );
 

@@ -124,6 +124,33 @@ describe('microservicioUsuarios tests basicos', () => {
     expect(response.body.message).toContain('Credenciales invalidas');
   });
 
+  test('POST /auth/login devuelve usuario autenticado con token JWT', async () => {
+    UsuarioModel.findOne.mockReturnValue(
+      withLean({
+        idUsuario: 1,
+        nomUsuario: 'ainara',
+        email: 'ainara@example.com',
+        contrasenia:
+          '783aeeecdc14447eb25990cc0ef58afcab0ae674fbf42fb21a5b1ae129be8b8f',
+      })
+    );
+
+    const response = await request(app)
+      .post('/auth/login')
+      .send({ email: 'ainara@example.com', contrasenia: 'secreto1' });
+
+    expect(response.status).toBe(200);
+    expect(response.body.data).toMatchObject({
+      idUsuario: 1,
+      nomUsuario: 'ainara',
+      email: 'ainara@example.com',
+      tokenType: 'Bearer',
+      expiresIn: expect.any(Number),
+    });
+    expect(typeof response.body.data.token).toBe('string');
+    expect(response.body.data.token.split('.')).toHaveLength(3);
+  });
+
   test('POST /auth/logout devuelve confirmacion de cierre de sesion', async () => {
     const response = await request(app).post('/auth/logout');
 

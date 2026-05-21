@@ -6,8 +6,17 @@
   const EVENT_NAME = 'etxebus:auth-change';
   const STYLE_ID = 'etxebus-auth-style';
 
-  function isLoggedIn() {
+  function hasSessionFlag() {
     return window.localStorage.getItem(SESSION_KEY) === 'authenticated';
+  }
+
+  function hasUserToken() {
+    const user = getStoredUser();
+    return Boolean(user && typeof user.token === 'string' && user.token.trim());
+  }
+
+  function isLoggedIn() {
+    return hasSessionFlag() && hasUserToken();
   }
 
   function applyVisibility(loggedIn) {
@@ -46,11 +55,33 @@
     }
     const nom = user.nomUsuario || user.nombre || user.username || '';
     const email = user.email || user.usuario || '';
+    const token =
+      typeof user.token === 'string'
+        ? user.token.trim()
+        : typeof user.accessToken === 'string'
+          ? user.accessToken.trim()
+          : '';
+    const tokenType =
+      typeof user.tokenType === 'string' && user.tokenType.trim()
+        ? user.tokenType.trim()
+        : 'Bearer';
+    const expiresIn = Number(user.expiresIn);
+
     return {
       idUsuario: parsedId,
       nomUsuario: String(nom || '').trim(),
       email: String(email || '').trim(),
+      token: token || '',
+      tokenType,
+      expiresIn: Number.isFinite(expiresIn) && expiresIn > 0 ? expiresIn : null,
     };
+  }
+
+  function getAuthorizationHeader() {
+    const user = getStoredUser();
+    if (!user?.token) return null;
+    const tokenType = user.tokenType || 'Bearer';
+    return `${tokenType} ${user.token}`;
   }
 
   function getStoredUser() {
@@ -83,7 +114,16 @@
   }
 
   function syncAuthUI() {
-    const loggedIn = isLoggedIn();
+    const sessionFlag = hasSessionFlag();
+    const tokenAvailable = hasUserToken();
+    const loggedIn = sessionFlag && tokenAvailable;
+
+    // Limpia solo estados inconsistentes: "authenticated" sin token.
+    if (sessionFlag && !tokenAvailable) {
+      window.localStorage.removeItem(SESSION_KEY);
+      window.localStorage.removeItem(USER_KEY);
+    }
+
     document.documentElement.classList.toggle('etxebus-auth', loggedIn);
     applyVisibility(loggedIn);
     dispatchState(loggedIn);
@@ -130,6 +170,12 @@
     },
     getUser() {
       return getStoredUser();
+    },
+    getAccessToken() {
+      return getStoredUser()?.token || null;
+    },
+    getAuthorizationHeader() {
+      return getAuthorizationHeader();
     },
     clearUser() {
       setStoredUser(null);

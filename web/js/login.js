@@ -19,6 +19,9 @@ document.addEventListener('DOMContentLoaded', () => {
       idUsuario: user.idUsuario,
       nomUsuario: user.nomUsuario,
       email: user.email,
+      token: user.token || '',
+      tokenType: user.tokenType || 'Bearer',
+      expiresIn: user.expiresIn || null,
     };
     if (window.EtxebusSession) {
       window.EtxebusSession.setUser(payload);
@@ -79,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       try {
         const user = await authenticate(identifier, contrasenia);
-        if (!user || !user.idUsuario) {
+        if (!user || !user.idUsuario || !String(user.token || '').trim()) {
           throw new Error('Respuesta invalida del servidor');
         }
         persistLogin(user);

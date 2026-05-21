@@ -25,6 +25,8 @@ const config = {
   port: toInt(process.env.PORT, 4000),
   allowedOrigins: parseOrigins(process.env.ALLOWED_ORIGINS),
   requestTimeoutMs: toInt(process.env.REQUEST_TIMEOUT_MS, 8000),
+  jwtSecret: process.env.JWT_SECRET || 'etxebus-dev-secret-change-me',
+  jwtExpiresInSeconds: toInt(process.env.JWT_EXPIRES_IN_SECONDS, 3600),
   services: {
     usuarios: process.env.USERS_SERVICE_URL || 'http://localhost:3000',
     transporte: process.env.TRANSPORTE_SERVICE_URL || 'http://localhost:5000',

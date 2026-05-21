@@ -70,6 +70,20 @@ const swaggerSpec = {
         required: ['contrasenia'],
         description: 'Provee email o nomUsuario mas la contrasenia.',
       },
+      AuthenticatedUsuario: {
+        allOf: [
+          { $ref: '#/components/schemas/Usuario' },
+          {
+            type: 'object',
+            properties: {
+              token: { type: 'string', example: '<jwt-token>' },
+              tokenType: { type: 'string', example: 'Bearer' },
+              expiresIn: { type: 'integer', example: 3600 },
+            },
+            required: ['token', 'tokenType', 'expiresIn'],
+          },
+        ],
+      },
       Preferencia: {
         type: 'object',
         properties: {
@@ -277,13 +291,20 @@ const swaggerSpec = {
         },
       },
     },
+    securitySchemes: {
+      BearerAuth: {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+      },
+    },
     parameters: {
       IdUsuarioQuery: {
         name: 'idUsuario',
         in: 'query',
-        required: true,
+        required: false,
         schema: { type: 'integer' },
-        description: 'Identificador del usuario.',
+        description: 'Identificador del usuario (si se omite, se usa el id del token JWT).',
       },
     },
   },
@@ -338,6 +359,7 @@ const swaggerSpec = {
       get: {
         tags: ['Usuarios'],
         summary: 'Listar usuarios (proxy)',
+        security: [{ BearerAuth: [] }],
         responses: {
           200: {
             description: 'Lista de usuarios',
@@ -393,6 +415,7 @@ const swaggerSpec = {
       get: {
         tags: ['Usuarios'],
         summary: 'Obtener usuario (proxy)',
+        security: [{ BearerAuth: [] }],
         responses: {
           200: {
             description: 'Usuario encontrado',
@@ -410,6 +433,7 @@ const swaggerSpec = {
       put: {
         tags: ['Usuarios'],
         summary: 'Actualizar usuario (proxy)',
+        security: [{ BearerAuth: [] }],
         requestBody: {
           required: true,
           content: {
@@ -435,6 +459,7 @@ const swaggerSpec = {
       delete: {
         tags: ['Usuarios'],
         summary: 'Eliminar usuario (proxy)',
+        security: [{ BearerAuth: [] }],
         responses: {
           200: {
             description: 'Usuario eliminado',
@@ -469,7 +494,9 @@ const swaggerSpec = {
               'application/json': {
                 schema: {
                   type: 'object',
-                  properties: { data: { $ref: '#/components/schemas/Usuario' } },
+                  properties: {
+                    data: { $ref: '#/components/schemas/AuthenticatedUsuario' },
+                  },
                 },
               },
             },
@@ -485,6 +512,7 @@ const swaggerSpec = {
       post: {
         tags: ['Auth'],
         summary: 'Logout (proxy)',
+        security: [{ BearerAuth: [] }],
         description:
           'Reenvia el cierre de sesion al microservicio de usuarios. Actualmente la operacion es stateless.',
         requestBody: {
@@ -526,6 +554,7 @@ const swaggerSpec = {
       get: {
         tags: ['Favoritos'],
         summary: 'Listar favoritos (proxy)',
+        security: [{ BearerAuth: [] }],
         parameters: [{ $ref: '#/components/parameters/IdUsuarioQuery' }],
         responses: {
           200: {
@@ -546,6 +575,7 @@ const swaggerSpec = {
       post: {
         tags: ['Favoritos'],
         summary: 'Crear favorito (proxy)',
+        security: [{ BearerAuth: [] }],
         requestBody: {
           required: true,
           content: {
@@ -582,6 +612,7 @@ const swaggerSpec = {
       get: {
         tags: ['Favoritos'],
         summary: 'Obtener favorito por id (proxy)',
+        security: [{ BearerAuth: [] }],
         parameters: [{ $ref: '#/components/parameters/IdUsuarioQuery' }],
         responses: {
           200: {
@@ -604,6 +635,7 @@ const swaggerSpec = {
       put: {
         tags: ['Favoritos'],
         summary: 'Actualizar favorito (proxy)',
+        security: [{ BearerAuth: [] }],
         parameters: [{ $ref: '#/components/parameters/IdUsuarioQuery' }],
         requestBody: {
           required: true,
@@ -632,6 +664,7 @@ const swaggerSpec = {
       delete: {
         tags: ['Favoritos'],
         summary: 'Eliminar favorito (proxy)',
+        security: [{ BearerAuth: [] }],
         parameters: [{ $ref: '#/components/parameters/IdUsuarioQuery' }],
         responses: {
           204: { description: 'Eliminado' },

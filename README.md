@@ -64,6 +64,7 @@ Accede a:
 ### Arranque manual para desarrollo
 
 1. Ten MongoDB y PostgreSQL corriendo con las credenciales definidas en `microservicioUsuarios/.env` y `microservicioTransporte/.env`.
+   Define tambien `JWT_SECRET` (mismo valor) en `microservicioUsuarios/.env` y `api-gateway/.env` para que el gateway pueda validar los tokens emitidos en login.
 2. En `microservicioTransporte`:
    ```powershell
    uvicorn app.main:app --reload --port 5000

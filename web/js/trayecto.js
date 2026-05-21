@@ -128,6 +128,21 @@ const favoritesListEl = document.getElementById('favorites-list');
 const favoritesCloseButton = document.getElementById('favorites-close');
 let activeComboInput = null;
 
+function buildAuthHeaders(baseHeaders = {}, credentials = null) {
+  const headers = { ...baseHeaders };
+  const sessionHeader = window.EtxebusSession?.getAuthorizationHeader?.();
+  const fallbackHeader = credentials?.token
+    ? `${credentials.tokenType || 'Bearer'} ${credentials.token}`
+    : null;
+  const authorization = sessionHeader || fallbackHeader;
+
+  if (authorization) {
+    headers.Authorization = authorization;
+  }
+
+  return headers;
+}
+
 document.addEventListener('DOMContentLoaded', initPlanner);
 
 async function initPlanner() {
@@ -524,7 +539,9 @@ async function refreshFavorites() {
     const params = new URLSearchParams({
       idUsuario: credentials.idUsuario,
     });
-    const response = await fetch(`${API_BASE_URL}/favoritos?${params.toString()}`);
+    const response = await fetch(`${API_BASE_URL}/favoritos?${params.toString()}`, {
+      headers: buildAuthHeaders({}, credentials),
+    });
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }
@@ -1445,9 +1462,13 @@ function findFavoriteBySlugs(originSlug, destinationSlug) {
 }
 
 async function saveFavorite(payload) {
+  const credentials = getCurrentUserCredentials();
   const response = await fetch(`${API_BASE_URL}/favoritos`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: buildAuthHeaders(
+      { 'Content-Type': 'application/json' },
+      credentials
+    ),
     body: JSON.stringify(payload),
   });
   if (!response.ok) {
@@ -1462,6 +1483,7 @@ async function removeFavorite(favoriteId, credentials) {
   });
   const response = await fetch(`${API_BASE_URL}/favoritos/${favoriteId}?${params.toString()}`, {
     method: 'DELETE',
+    headers: buildAuthHeaders({}, credentials),
   });
   if (!response.ok && response.status !== 404) {
     throw new Error(`HTTP ${response.status}`);
@@ -1473,10 +1495,14 @@ function getCurrentUserCredentials() {
     if (!user || typeof user !== 'object') return null;
     const id = Number(user.idUsuario ?? user.id);
     if (!Number.isFinite(id)) return null;
+    const token = String(user.token || user.accessToken || '').trim();
+    if (!token) return null;
     return {
       idUsuario: id,
       nomUsuario: user.nomUsuario || '',
       email: user.email || '',
+      token,
+      tokenType: user.tokenType || 'Bearer',
     };
   };
 
