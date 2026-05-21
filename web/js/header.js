@@ -272,6 +272,10 @@
       if (!response.ok && response.status !== 404) {
         throw new Error(`HTTP ${response.status}`);
       }
+      if (response.ok) {
+        window.location.reload();
+        return;
+      }
       await refreshOverlayFavorites();
     } catch (error) {
       console.warn('No se pudo eliminar el favorito', error);

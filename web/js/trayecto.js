@@ -588,8 +588,10 @@ async function handleFavoritesListClick(event) {
     const credentials = getCurrentUserCredentials();
     if (!credentials || !credentials.idUsuario) return;
     try {
-      await removeFavorite(favoriteId, credentials);
-      await refreshFavorites();
+      const hasReloaded = await removeFavorite(favoriteId, credentials);
+      if (!hasReloaded) {
+        await refreshFavorites();
+      }
     } catch (error) {
       console.warn('No se pudo eliminar el favorito', error);
       showStatus('No se pudo eliminar el favorito seleccionado.', true);
@@ -616,7 +618,10 @@ async function handleFavoriteClick() {
   const existing = findFavoriteBySlugs(originChoice.slug, destinationChoice.slug);
   try {
     if (existing) {
-      await removeFavorite(existing.idFavorito, credentials);
+      const hasReloaded = await removeFavorite(existing.idFavorito, credentials);
+      if (hasReloaded) {
+        return;
+      }
     } else {
       await saveFavorite({
         idUsuario: credentials.idUsuario,
@@ -1477,7 +1482,7 @@ async function saveFavorite(payload) {
 }
 
 async function removeFavorite(favoriteId, credentials) {
-  if (!favoriteId) return;
+  if (!favoriteId) return false;
   const params = new URLSearchParams({
     idUsuario: credentials.idUsuario,
   });
@@ -1485,9 +1490,14 @@ async function removeFavorite(favoriteId, credentials) {
     method: 'DELETE',
     headers: buildAuthHeaders({}, credentials),
   });
+  if (response.ok) {
+    window.location.reload();
+    return true;
+  }
   if (!response.ok && response.status !== 404) {
     throw new Error(`HTTP ${response.status}`);
   }
+  return false;
 }
 
 function getCurrentUserCredentials() {
