@@ -7,7 +7,7 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "seed:test-user": "node scripts/create-test-user.js",
-    "test": "jest --runInBand",
+    "test": "jest --runInBand --reporters=summary",
     "coverage": "c8 --reporter=text --reporter=html npm test"
   },
   "keywords": [

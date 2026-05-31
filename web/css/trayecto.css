@@ -33,15 +33,18 @@ body {
 }
 
 .horarios-header {
+  margin: 0.85rem 1rem 0;
   background: var(--accent);
   color: #fff;
-  padding: 1rem 2.5rem;
-  min-height: var(--header-height);
-  display: flex;
+  padding: 12px 20px;
+  min-height: 84px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  box-shadow: 0 8px 20px rgba(13, 59, 102, 0.25);
+  gap: 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(222, 236, 255, 0.24);
+  box-shadow: 0 12px 28px rgba(7, 29, 52, 0.22);
   flex-shrink: 0;
 }
 
@@ -50,7 +53,7 @@ body {
   color: #fff;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 12px;
 }
 
 .horarios-header .brand:link,
@@ -62,36 +65,44 @@ body {
 }
 
 .horarios-header .brand strong {
+  display: block;
+  margin: 0;
+  font-size: 30px;
+  line-height: 1;
+  font-weight: 800;
   color: #ffffff;
   text-decoration: none;
 }
 
 .horarios-header .brand img {
-  width: 70px;
-  height: 70px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
   object-fit: cover;
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.22);
 }
 
 .horarios-header .brand p {
-  margin: 0;
-  font-size: 0.9rem;
-  opacity: 0.85;
+  margin: 5px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(228, 239, 251, 0.9);
 }
 
 .horarios-header nav {
   display: flex;
-  flex: 1;
+  align-items: center;
   justify-content: center;
-  gap: 2.5rem;
+  gap: 2rem;
+  min-width: 0;
 }
 
 .horarios-header .nav-link {
   position: relative;
   color: rgba(255, 255, 255, 0.85);
   text-decoration: none;
-  font-weight: 600;
+  font-size: 1rem;
+  font-weight: 700;
   padding-bottom: 0.15rem;
   transition: color 0.2s ease;
 }
@@ -122,35 +133,33 @@ body {
 .header-zone {
   display: flex;
   align-items: center;
-  gap: 0.85rem;
-  margin-left: auto;
+  gap: 12px;
+  justify-self: end;
 }
 
 .header-login-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.65rem 1rem;
-  border-radius: 16px;
+  padding: 10px 14px;
+  border-radius: 12px;
   text-decoration: none;
-  color: #ffffff;
+  color: #0f5f97;
+  font-size: 14px;
   font-weight: 700;
-  letter-spacing: 0.01em;
-  background: rgba(255, 255, 255, 0.14);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 12px 26px rgba(8, 26, 48, 0.2);
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  background: #eaf2ff;
+  border: 1px solid #c7daf8;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .header-login-link:hover {
-  background: rgba(255, 255, 255, 0.2);
   transform: translateY(-1px);
-  box-shadow: 0 16px 32px rgba(8, 26, 48, 0.24);
+  box-shadow: 0 10px 18px rgba(14, 86, 143, 0.2);
 }
 
 .header-login-link:focus-visible {
-  outline: 3px solid rgba(255, 255, 255, 0.6);
-  outline-offset: 3px;
+  outline: 3px solid rgba(45, 122, 194, 0.35);
+  outline-offset: 2px;
 }
 
 .header-icon {
@@ -158,13 +167,14 @@ body {
   height: 44px;
   border: none;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(34, 117, 176, 0.22);
   color: #fff;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  box-shadow: 0 10px 20px rgba(10, 69, 117, 0.24);
 }
 
 .header-icon:first-child {
@@ -177,14 +187,23 @@ body {
   fill: currentColor;
 }
 
+.header-icon:hover {
+  transform: translateY(-1px);
+  background: rgba(34, 117, 176, 0.3);
+}
+
+.header-icon:focus-visible {
+  outline: 3px solid rgba(45, 122, 194, 0.35);
+  outline-offset: 2px;
+}
+
 .trayecto-main {
-  padding: 2rem clamp(1rem, 5vw, 4rem) 2.5rem;
+  padding: 1.35rem clamp(1rem, 5vw, 4rem) 2.25rem;
   display: grid;
   grid-template-columns: minmax(320px, 480px) 1fr;
   grid-template-rows: minmax(0, 1fr);
   gap: 2rem;
   flex: 1;
-  height: calc(var(--viewport-height) - var(--header-height));
   min-height: 0;
   overflow: hidden;
   align-items: stretch;
@@ -1163,7 +1182,8 @@ body {
 
 @media (max-width: 900px) {
   .horarios-header {
-    flex-direction: column;
+    margin: 0.65rem 0.75rem 0;
+    grid-template-columns: 1fr;
     align-items: flex-start;
     padding: 1rem 1.1rem;
   }
@@ -1212,7 +1232,7 @@ body {
 
 @media (max-width: 640px) {
   .horarios-header {
-    flex-direction: column;
+    grid-template-columns: 1fr;
     align-items: flex-start;
   }
 

@@ -5,83 +5,202 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#0f5f97">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="EtxeBus">
   <title>EtxeBus - Panel principal</title>
   <link rel="icon" type="image/png" href="../image/logo.png">
   <link rel="apple-touch-icon" href="../image/icon-192.png">
   <link rel="manifest" href="../manifest.webmanifest">
-  <link rel="stylesheet" href="../css/principal.css?v=20260519d">
+  <link rel="stylesheet" href="../css/principal.css?v=20260528c">
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
 </head>
 <body>
-  <header class="main-header">
-    <a class="brand" href="principal.html" aria-label="Volver al inicio">
-      <img src="../image/logo.png" alt="EtxeBus logo" class="logo">
-      <h1>EtxeBus</h1>
-    </a>
-    <div class="header-zone">
-      <a class="header-login-link" href="login.html" data-auth-guest aria-label="Ir a inicio de sesion">¿Desea iniciar sesión?</a>
-      <div class="header-actions" data-auth-role="auth-controls" hidden>
-        <button class="header-icon" type="button" aria-label="Favoritos" data-role="header-favorites">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 2.5l2.7 5.4 6 .9-4.4 4.2 1 6-5.3-2.8-5.3 2.8 1-6-4.4-4.2 6-.9z" fill="currentColor"/>
-          </svg>
-        </button>
-        <button class="header-icon" type="button" aria-label="Perfil" data-role="header-profile">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 12a4 4 0 100-8 4 4 0 000 8z" fill="currentColor"/>
-            <path d="M5 19.5c0-3.2 3.3-5.8 7-5.8s7 2.6 7 5.8V21H5z" fill="currentColor"/>
-          </svg>
-        </button>
-      </div>
-    </div>
-  </header>
+  <div class="main-shell">
+    <header class="topbar">
+      <a class="brand" href="principal.html" aria-label="Volver al inicio">
+        <img src="../image/logo.png?v=20260528b" alt="EtxeBus logo" class="logo">
+        <div class="brand-copy">
+          <h1>EtxeBus</h1>
+          <p>Panel principal</p>
+        </div>
+      </a>
 
-  <main class="dashboard">
-    <section class="map-wrapper">
-      <div id="map" role="region" aria-label="Mapa de paradas de autobus"></div>
-    </section>
-    <aside class="actions-panel">
-      <button type="button" class="action" data-link="lineas.html">
-        <span class="action-icon" aria-hidden="true">
-          <svg viewBox="0 0 32 32">
-            <path d="M8 7l8-3 8 3 0 0 0 0v18l-8 3-8-3-4 1.5V8.5z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="2"/>
-            <path d="M12 11l6 3-5 4 6 3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"/>
-          </svg>
-        </span>
-        <span class="action-label">Lineas</span>
-      </button>
-      <button type="button" class="action" data-link="horarios.html">
-        <span class="action-icon" aria-hidden="true">
-          <svg viewBox="0 0 32 32">
-            <circle cx="16" cy="16" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
-            <path d="M16 10v6l4 3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"/>
-          </svg>
-        </span>
-        <span class="action-label">Horarios</span>
-      </button>
-      <button type="button" class="action" data-link="trayecto.html">
-        <span class="action-icon" aria-hidden="true">
-          <svg viewBox="0 0 32 32">
-            <path d="M11 10a4 4 0 118 0c0 3.8-4 8.5-4 8.5S11 13.8 11 10z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="2"/>
-            <circle cx="22" cy="22" r="3" fill="currentColor"/>
-            <path d="M16 18c2.5 1.5 4.5 3.5 6 5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"/>
-          </svg>
-        </span>
-        <span class="action-label">Trayecto</span>
-      </button>
-    </aside>
-  </main>
+      <label class="search-shell" for="map-search">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="11" cy="11" r="6" fill="none" stroke="currentColor" stroke-width="2"></circle>
+          <path d="M16 16l5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+        </svg>
+        <input id="map-search" type="search" placeholder="Buscar parada, linea o trayecto..." autocomplete="off">
+      </label>
+
+      <div class="header-zone">
+        <a class="header-login-link" href="login.html" data-auth-guest aria-label="Ir a inicio de sesion">Desea iniciar sesion?</a>
+        <div class="header-actions" data-auth-role="auth-controls" hidden>
+          <button class="header-icon" type="button" aria-label="Favoritos" data-role="header-favorites">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3l2.6 5.1 5.7.8-4.1 4 1 5.7L12 16.2l-5.2 2.7 1-5.7-4.1-4 5.7-.8z" fill="currentColor"></path>
+            </svg>
+          </button>
+          <button class="header-icon" type="button" aria-label="Perfil" data-role="header-profile">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 12a4 4 0 100-8 4 4 0 000 8z" fill="currentColor"></path>
+              <path d="M5 19.5c0-3.2 3.3-5.8 7-5.8s7 2.6 7 5.8V21H5z" fill="currentColor"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <nav class="side-nav" aria-label="Navegacion principal">
+        <div class="side-nav__group side-nav__group--main">
+          <a href="principal.html" class="side-nav__item is-active" aria-current="page" title="Inicio">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 10.5L12 4l8 6.5V20a1 1 0 01-1 1h-5v-6H10v6H5a1 1 0 01-1-1z" fill="currentColor"></path>
+            </svg>
+            <span>Inicio</span>
+          </a>
+          <a href="lineas.html" class="side-nav__item" title="Lineas">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 6h16M4 12h16M4 18h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+            </svg>
+            <span>Lineas</span>
+          </a>
+          <a href="horarios.html" class="side-nav__item" title="Horarios">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"></circle>
+              <path d="M12 8v4l3 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+            </svg>
+            <span>Horarios</span>
+          </a>
+          <a href="trayecto.html" class="side-nav__item" title="Trayectos">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M7 7a3 3 0 116 0c0 2.4-3 5.8-3 5.8S7 9.4 7 7z" fill="none" stroke="currentColor" stroke-width="2"></path>
+              <circle cx="17.5" cy="17.5" r="2.5" fill="currentColor"></circle>
+              <path d="M11 12.5c2.2 1 4 2.8 5.4 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+            </svg>
+            <span>Trayectos</span>
+          </a>
+        </div>
+
+        <div class="side-nav__group side-nav__group--utility">
+          <button type="button" class="side-nav__item side-nav__item--ghost" data-side-action="info" aria-label="Informacion del servicio" title="Informacion">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"></circle>
+              <circle cx="12" cy="8" r="1.2" fill="currentColor"></circle>
+              <path d="M12 11v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+            </svg>
+            <span>Info</span>
+          </button>
+        </div>
+      </nav>
+
+      <section class="map-stage">
+        <div id="map" role="region" aria-label="Mapa de lineas y paradas de EtxeBus"></div>
+
+        <div class="map-side-panels">
+          <aside class="panel panel-lines" id="panel-lines" aria-labelledby="panel-lines-title">
+            <h2 class="panel-heading" id="panel-lines-title">
+              <button
+                type="button"
+                class="panel-toggle"
+                data-panel-toggle="lines"
+                aria-expanded="true"
+                aria-controls="panel-lines-body"
+              >
+                <span>Lineas</span>
+                <svg class="panel-toggle__icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+              </button>
+            </h2>
+            <div class="panel-body" id="panel-lines-body">
+              <div id="line-list" class="line-list"></div>
+
+              <div class="panel-divider"></div>
+
+              <div class="filters">
+                <p class="panel-subtitle">Filtros</p>
+                <label class="check-row" for="filter-lines">
+                  <input type="checkbox" id="filter-lines" checked>
+                  <span>Lineas</span>
+                </label>
+                <label class="check-row" for="filter-stops">
+                  <input type="checkbox" id="filter-stops" checked>
+                  <span>Paradas</span>
+                </label>
+              </div>
+            </div>
+          </aside>
+
+          <aside class="panel panel-legend" id="panel-legend" aria-labelledby="panel-legend-title">
+            <h2 class="panel-heading" id="panel-legend-title">
+              <button
+                type="button"
+                class="panel-toggle"
+                data-panel-toggle="legend"
+                aria-expanded="true"
+                aria-controls="panel-legend-body"
+              >
+                <span>Leyenda</span>
+                <svg class="panel-toggle__icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+              </button>
+            </h2>
+            <div class="panel-body" id="panel-legend-body">
+              <ul class="legend-list" id="legend-list"></ul>
+              <p class="legend-note">
+                <span class="legend-note__dot"></span>
+                Paradas del recorrido
+              </p>
+            </div>
+          </aside>
+        </div>
+
+        <article class="route-card" id="route-card" hidden>
+          <header class="route-card__header">
+            <div class="route-card__line">
+              <span class="route-chip" id="route-chip">E1</span>
+              <h3 id="route-title">Etxebarri - San Esteban</h3>
+            </div>
+            <button type="button" class="route-card__close" id="route-card-close" aria-label="Cerrar detalle">&times;</button>
+          </header>
+          <p id="route-stop" class="route-stop">Parada: Ayuntamiento</p>
+          <p class="route-times-label">Proximos horarios:</p>
+          <div id="route-times" class="route-times"></div>
+          <a class="route-link" id="route-open-link" href="horarios.html">Ver mas horarios</a>
+        </article>
+
+        <div class="map-tools" role="group" aria-label="Controles del mapa">
+          <button type="button" id="zoom-in" aria-label="Acercar" title="Acercar">+</button>
+          <button type="button" id="zoom-out" aria-label="Alejar" title="Alejar">-</button>
+          <button type="button" id="reset-view" aria-label="Recentrar" title="Recentrar">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 5a7 7 0 107 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+              <path d="M12 2l0 5 4-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+          </button>
+          <button type="button" id="toggle-panels" aria-label="Mostrar u ocultar paneles" title="Mostrar u ocultar paneles">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 6h16M4 12h16M4 18h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+            </svg>
+          </button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <p class="sr-only" id="ui-status" aria-live="polite"></p>
 
   <script src="../config.local.js?v=20260521d"></script>
   <script src="../js/pwa-register.js?v=20260521d"></script>
   <script src="../js/session.js?v=20260521d"></script>
-  <script src="../js/header.js?v=20260521d"></script>
+  <script src="../js/header.js?v=20260526d"></script>
   <script src="../js/routes-precomputed.js?v=20260521d"></script>
-  <script src="../js/mapa.js?v=20260521d"></script>
-  <script src="../js/principal.js?v=20260521d"></script>
-
+  <script src="../js/mapa.js?v=20260528p"></script>
+  <script src="../js/principal.js?v=20260528p"></script>
 </body>
 </html>

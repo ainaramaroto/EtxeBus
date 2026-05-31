@@ -43,6 +43,16 @@
   let profileSuccessEl;
   let profileFormEl;
 
+  function clearInvalidSession() {
+    if (window.EtxebusSession) {
+      window.EtxebusSession.clearUser?.();
+      window.EtxebusSession.setLoggedIn?.(false);
+      return;
+    }
+    window.localStorage.removeItem('etxebusSession');
+    window.localStorage.removeItem('etxebusUser');
+  }
+
   function buildAuthHeaders(baseHeaders = {}, credentials = null) {
     const headers = { ...baseHeaders };
     const sessionHeader = window.EtxebusSession?.getAuthorizationHeader?.();
@@ -77,9 +87,16 @@
     }
   }
 
+  function isPrincipalPage() {
+    const path = String(window.location.pathname || '').toLowerCase();
+    return path.endsWith('/principal.html') || path === '/principal.html';
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     injectStyles();
-    initInfoOverlay();
+    if (isPrincipalPage()) {
+      initInfoOverlay();
+    }
 
     const favoritesTrigger = document.querySelector('[data-role="header-favorites"]');
     if (favoritesTrigger) {
@@ -191,6 +208,13 @@
       const response = await fetch(`${API_BASE_URL}/favoritos?${params.toString()}`, {
         headers: buildAuthHeaders({}, credentials),
       });
+      if (response.status === 401) {
+        clearInvalidSession();
+        favorites = [];
+        renderOverlay();
+        hideOverlay();
+        return;
+      }
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
@@ -269,6 +293,11 @@
           headers: buildAuthHeaders({}, credentials),
         },
       );
+      if (response.status === 401) {
+        clearInvalidSession();
+        hideOverlay();
+        return;
+      }
       if (!response.ok && response.status !== 404) {
         throw new Error(`HTTP ${response.status}`);
       }
