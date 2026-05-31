@@ -511,10 +511,10 @@ CUSTOM_SCHEDULES = [
 
 LINE_DEFINITIONS = [
     {
-        "slug": "l1-metro",
+        "nomLineaCom": "l1-metro",
         "nomLinea": "Metro",
-        "badge": "Linea 1",
-        "subtitle": "Metro -> Santa Marina",
+        "linea": "Linea 1",
+        "descLinea": "Metro -> Santa Marina",
         "color": "#0074D9",
         "info": "Conecta el metro con el barrio alto. Ideal en horas punta de la manana.",
         "orden": 1,
@@ -531,10 +531,10 @@ LINE_DEFINITIONS = [
         ],
     },
     {
-        "slug": "l1-santamarina",
+        "nomLineaCom": "l1-santamarina",
         "nomLinea": "Santa Marina",
-        "badge": "Linea 1",
-        "subtitle": "Santa Marina -> Metro",
+        "linea": "Linea 1",
+        "descLinea": "Santa Marina -> Metro",
         "color": "#FFC107",
         "info": "Recorre el casco urbano y baja hacia el metro pasando por los centros escolares.",
         "orden": 2,
@@ -550,10 +550,10 @@ LINE_DEFINITIONS = [
         ],
     },
     {
-        "slug": "l2-labur",
+        "nomLineaCom": "l2-labur",
         "nomLinea": "Labur",
-        "badge": "Linea 2",
-        "subtitle": "Boquete directo",
+        "linea": "Linea 2",
+        "descLinea": "Boquete directo",
         "color": "#C6FF00",
         "info": "Version rapida para subir y bajar al Boquete. Enlaza con Metro y lineas comarcales.",
         "orden": 3,
@@ -571,10 +571,10 @@ LINE_DEFINITIONS = [
         ],
     },
     {
-        "slug": "l2-luze",
+        "nomLineaCom": "l2-luze",
         "nomLinea": "Luze",
-        "badge": "Linea 2",
-        "subtitle": "Poligono + Boquete",
+        "linea": "Linea 2",
+        "descLinea": "Poligono + Boquete",
         "color": "#1B8F3A",
         "info": "Servicio que enlaza el poligono, los centros educativos y la zona del Boquete sin trasbordos.",
         "orden": 4,
@@ -598,15 +598,15 @@ LINE_DEFINITIONS = [
 
 DEFAULT_SCHEDULE_CARDS = [
     {
-        "slug": "l1-santa-marina",
-        "line_code": "L1",
-        "line_name": "Linea 1",
-        "line_badge": "Linea 1",
-        "line_color": "#0074D9",
-        "service_name": "Santa Marina y Metro",
-        "description": "Frecuencias oficiales entre Metro Etxebarri y Santa Marina.",
-        "line_id": 1,
-        "blocks": [
+        "nomLineaCom": "l1-santa-marina",
+        "codLinea": "L1",
+        "nomLinea": "Linea 1",
+        "lin": "Linea 1",
+        "colorLinea": "#0074D9",
+        "servicioLinea": "Santa Marina y Metro",
+        "desc": "Frecuencias oficiales entre Metro Etxebarri y Santa Marina.",
+        "idLinea": 1,
+        "bloques": [
             {
                 "title": "Laborables",
                 "note": "Tiempos en negrita indican servicio adaptado a dias no lectivos.",
@@ -634,15 +634,15 @@ DEFAULT_SCHEDULE_CARDS = [
         ],
     },
     {
-        "slug": "l2-poligono-boquete",
-        "line_code": "L2",
-        "line_name": "Linea 2",
-        "line_badge": "Linea 2",
-        "line_color": "#1B8F3A",
-        "service_name": "Servicio Luze y Labur",
-        "description": "Recorridos hacia poligono industrial y barrio del Boquete.",
-        "line_id": 4,
-        "blocks": [
+        "nomLineaCom": "l2-poligono-boquete",
+        "codLinea": "L2",
+        "nomLinea": "Linea 2",
+        "lin": "Linea 2",
+        "colorLinea": "#1B8F3A",
+        "servicioLinea": "Servicio Luze y Labur",
+        "desc": "Recorridos hacia poligono industrial y barrio del Boquete.",
+        "idLinea": 4,
+        "bloques": [
             {
                 "title": "Laborables",
                 "subtitle": "Servicio Luze (Poligono + Boquete)",
@@ -766,10 +766,10 @@ def seed_lines_and_stops(session: Session) -> None:
 
     for data in LINE_DEFINITIONS:
         line = models.Line(
-            slug=data["slug"],
+            nomLineaCom=data["nomLineaCom"],
             nomLinea=data["nomLinea"],
-            badge=data["badge"],
-            subtitle=data["subtitle"],
+            linea=data["linea"],
+            descLinea=data["descLinea"],
             info=data["info"],
             color=data["color"],
             orden=data["orden"],
@@ -794,24 +794,24 @@ def seed_lines_and_stops(session: Session) -> None:
 
 def seed_schedule_cards(session: Session) -> None:
     existing_cards = {
-        card.slug: card for card in session.query(models.ScheduleCard).all()
+        card.nomLineaCom: card for card in session.query(models.ScheduleCard).all()
     }
 
     for idx, payload in enumerate(DEFAULT_SCHEDULE_CARDS, start=1):
-        card = existing_cards.get(payload["slug"])
+        card = existing_cards.get(payload["nomLineaCom"])
         if not card:
-            card = models.ScheduleCard(slug=payload["slug"])
+            card = models.ScheduleCard(nomLineaCom=payload["nomLineaCom"])
             session.add(card)
 
-        card.line_code = payload["line_code"]
-        card.line_name = payload["line_name"]
-        card.line_badge = payload["line_badge"]
-        card.line_color = payload["line_color"]
-        card.service_name = payload["service_name"]
-        card.description = payload["description"]
-        card.blocks = payload["blocks"]
+        card.codLinea = payload["codLinea"]
+        card.nomLinea = payload["nomLinea"]
+        card.lin = payload["lin"]
+        card.colorLinea = payload["colorLinea"]
+        card.servicioLinea = payload["servicioLinea"]
+        card.desc = payload["desc"]
+        card.bloques = payload["bloques"]
         card.orden = idx
-        card.idLinea = payload.get("line_id")
+        card.idLinea = payload.get("idLinea")
 
     session.commit()
 
@@ -846,7 +846,246 @@ def seed_schedules(session: Session) -> None:
     session.commit()
 
 
+def _migrate_legacy_transport_schema(session: Session) -> None:
+    session.execute(
+        text(
+            """
+            DO $$
+            BEGIN
+                IF to_regclass('"horario_card"') IS NOT NULL
+                   AND to_regclass('"horario_publicado"') IS NULL THEN
+                    ALTER TABLE "horario_card" RENAME TO "horario_publicado";
+                ELSIF to_regclass('"horario_card"') IS NOT NULL
+                      AND to_regclass('"horario_publicado"') IS NOT NULL THEN
+                    INSERT INTO "horario_publicado" (
+                        "id",
+                        "nomLineaCom",
+                        "codLinea",
+                        "nomLinea",
+                        "lin",
+                        "colorLinea",
+                        "servicioLinea",
+                        "desc",
+                        "bloques",
+                        "orden",
+                        "idLinea"
+                    )
+                    SELECT
+                        "id",
+                        "slug",
+                        "line_code",
+                        "line_name",
+                        "line_badge",
+                        "line_color",
+                        "service_name",
+                        "description",
+                        "blocks",
+                        "orden",
+                        "idLinea"
+                    FROM "horario_card"
+                    ON CONFLICT ("nomLineaCom")
+                    DO UPDATE SET
+                        "codLinea" = EXCLUDED."codLinea",
+                        "nomLinea" = EXCLUDED."nomLinea",
+                        "lin" = EXCLUDED."lin",
+                        "colorLinea" = EXCLUDED."colorLinea",
+                        "servicioLinea" = EXCLUDED."servicioLinea",
+                        "desc" = EXCLUDED."desc",
+                        "bloques" = EXCLUDED."bloques",
+                        "orden" = EXCLUDED."orden",
+                        "idLinea" = EXCLUDED."idLinea";
+                    DROP TABLE "horario_card";
+                END IF;
+
+                IF to_regclass('"horario_snapshot"') IS NOT NULL
+                   AND to_regclass('"horario_reserva"') IS NULL THEN
+                    ALTER TABLE "horario_snapshot" RENAME TO "horario_reserva";
+                ELSIF to_regclass('"horario_snapshot"') IS NOT NULL
+                      AND to_regclass('"horario_reserva"') IS NOT NULL THEN
+                    INSERT INTO "horario_reserva" ("nomLineaCom", "datos", "act")
+                    SELECT "slug", "payload", "fetched_at"
+                    FROM "horario_snapshot"
+                    ON CONFLICT ("nomLineaCom")
+                    DO UPDATE SET
+                        "datos" = EXCLUDED."datos",
+                        "act" = EXCLUDED."act";
+                    DROP TABLE "horario_snapshot";
+                END IF;
+
+                IF EXISTS (
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND table_name = 'linea'
+                      AND column_name = 'slug'
+                ) THEN
+                    ALTER TABLE "linea" RENAME COLUMN "slug" TO "nomLineaCom";
+                END IF;
+                IF EXISTS (
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND table_name = 'linea'
+                      AND column_name = 'badge'
+                ) THEN
+                    ALTER TABLE "linea" RENAME COLUMN "badge" TO "linea";
+                END IF;
+                IF EXISTS (
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND table_name = 'linea'
+                      AND column_name = 'subtitle'
+                ) THEN
+                    ALTER TABLE "linea" RENAME COLUMN "subtitle" TO "descLinea";
+                END IF;
+
+                IF EXISTS (
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND table_name = 'horario_publicado'
+                      AND column_name = 'slug'
+                ) THEN
+                    ALTER TABLE "horario_publicado" RENAME COLUMN "slug" TO "nomLineaCom";
+                END IF;
+                IF EXISTS (
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND table_name = 'horario_publicado'
+                      AND column_name = 'line_code'
+                ) THEN
+                    ALTER TABLE "horario_publicado" RENAME COLUMN "line_code" TO "codLinea";
+                END IF;
+                IF EXISTS (
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND table_name = 'horario_publicado'
+                      AND column_name = 'line_name'
+                ) THEN
+                    ALTER TABLE "horario_publicado" RENAME COLUMN "line_name" TO "nomLinea";
+                END IF;
+                IF EXISTS (
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND table_name = 'horario_publicado'
+                      AND column_name = 'line_badge'
+                ) THEN
+                    ALTER TABLE "horario_publicado" RENAME COLUMN "line_badge" TO "lin";
+                END IF;
+                IF EXISTS (
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND table_name = 'horario_publicado'
+                      AND column_name = 'line_color'
+                ) THEN
+                    ALTER TABLE "horario_publicado" RENAME COLUMN "line_color" TO "colorLinea";
+                END IF;
+                IF EXISTS (
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND table_name = 'horario_publicado'
+                      AND column_name = 'service_name'
+                ) THEN
+                    ALTER TABLE "horario_publicado" RENAME COLUMN "service_name" TO "servicioLinea";
+                END IF;
+                IF EXISTS (
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND table_name = 'horario_publicado'
+                      AND column_name = 'description'
+                ) THEN
+                    ALTER TABLE "horario_publicado" RENAME COLUMN "description" TO "desc";
+                END IF;
+                IF EXISTS (
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND table_name = 'horario_publicado'
+                      AND column_name = 'blocks'
+                ) THEN
+                    ALTER TABLE "horario_publicado" RENAME COLUMN "blocks" TO "bloques";
+                END IF;
+
+                IF EXISTS (
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND table_name = 'horario_reserva'
+                      AND column_name = 'slug'
+                ) THEN
+                    ALTER TABLE "horario_reserva" RENAME COLUMN "slug" TO "nomLineaCom";
+                END IF;
+                IF EXISTS (
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND table_name = 'horario_reserva'
+                      AND column_name = 'payload'
+                ) THEN
+                    ALTER TABLE "horario_reserva" RENAME COLUMN "payload" TO "datos";
+                END IF;
+                IF EXISTS (
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND table_name = 'horario_reserva'
+                      AND column_name = 'fetched_at'
+                ) THEN
+                    ALTER TABLE "horario_reserva" RENAME COLUMN "fetched_at" TO "act";
+                END IF;
+
+                IF EXISTS (
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND table_name = 'favorito_trayecto'
+                      AND column_name = 'origin_slug'
+                ) THEN
+                    ALTER TABLE "favorito_trayecto" RENAME COLUMN "origin_slug" TO "paradaOrigen";
+                END IF;
+                IF EXISTS (
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND table_name = 'favorito_trayecto'
+                      AND column_name = 'destination_slug'
+                ) THEN
+                    ALTER TABLE "favorito_trayecto" RENAME COLUMN "destination_slug" TO "paradaDestino";
+                END IF;
+                IF EXISTS (
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND table_name = 'favorito_trayecto'
+                      AND column_name = 'origin_label'
+                ) THEN
+                    ALTER TABLE "favorito_trayecto" RENAME COLUMN "origin_label" TO "nomParadaOrigen";
+                END IF;
+                IF EXISTS (
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND table_name = 'favorito_trayecto'
+                      AND column_name = 'destination_label'
+                ) THEN
+                    ALTER TABLE "favorito_trayecto" RENAME COLUMN "destination_label" TO "nomParadaDestino";
+                END IF;
+            END $$;
+            """
+        )
+    )
+
+
 def ensure_schedule_schema(session: Session) -> None:
+    _migrate_legacy_transport_schema(session)
+
     session.execute(
         text(
             """
@@ -897,7 +1136,7 @@ def ensure_schedule_schema(session: Session) -> None:
     )
     session.execute(
         text(
-            'ALTER TABLE "horario_card" '
+            'ALTER TABLE "horario_publicado" '
             'ADD COLUMN IF NOT EXISTS "idLinea" INTEGER NULL'
         )
     )

@@ -84,6 +84,27 @@ def test_linea_no_encontrada_devuelve_404(client):
     assert response.json()["detail"] == "Linea no encontrada"
 
 
+def test_lineas_create_acepta_campos_renombrados(client):
+    response = client.post(
+        "/lineas/",
+        json={
+            "nomLineaCom": "linea-renombrada",
+            "nomLinea": "Linea renombrada",
+            "linea": "LR",
+            "descLinea": "Servicio renombrado",
+            "info": "Linea creada con campos nuevos",
+            "color": "#112233",
+            "orden": 7,
+        },
+    )
+
+    assert response.status_code == 201
+    payload = response.json()
+    assert payload["slug"] == "linea-renombrada"
+    assert payload["badge"] == "LR"
+    assert payload["subtitle"] == "Servicio renombrado"
+
+
 def test_lineas_update_y_delete(client):
     creada = create_line(client, 11)
 
@@ -396,6 +417,27 @@ def test_favorito_no_encontrado_devuelve_404(client):
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Favorito no encontrado"
+
+
+def test_favoritos_create_acepta_campos_renombrados(client):
+    crear = client.post(
+        "/favoritos/",
+        json={
+            "usuario": "ainara",
+            "contrasenia": "secret123",
+            "paradaOrigen": "metro",
+            "paradaDestino": "boquete",
+            "nomParadaOrigen": "Metro",
+            "nomParadaDestino": "Boquete",
+        },
+    )
+
+    assert crear.status_code == 201
+    payload = crear.json()
+    assert payload["origin_slug"] == "metro"
+    assert payload["destination_slug"] == "boquete"
+    assert payload["origin_label"] == "Metro"
+    assert payload["destination_label"] == "Boquete"
 
 
 def test_error_interno_devuelve_500(client, monkeypatch):

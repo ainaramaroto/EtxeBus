@@ -34,8 +34,8 @@ def create_favorite(payload: schemas.FavoriteTripCreate, db: Session = Depends(g
         .filter(
             models.FavoriteTrip.usuario == payload.usuario,
             models.FavoriteTrip.contrasenia == payload.contrasenia,
-            models.FavoriteTrip.origin_slug == payload.origin_slug,
-            models.FavoriteTrip.destination_slug == payload.destination_slug,
+            models.FavoriteTrip.paradaOrigen == payload.origin_slug,
+            models.FavoriteTrip.paradaDestino == payload.destination_slug,
         )
         .first()
     )

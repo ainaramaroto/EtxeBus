@@ -36,14 +36,20 @@ function buildPreferenciaDoc(initial) {
     ...initial,
     save: jest.fn().mockResolvedValue(null),
   };
+  const pick = (preferred, fallback) =>
+    doc[preferred] === undefined || doc[preferred] === null ? doc[fallback] : doc[preferred];
   doc.toObject = jest.fn(() => ({
     idPreferencia: doc.idPreferencia,
     idUsuario: doc.idUsuario,
     tipo: doc.tipo,
-    origin_slug: doc.origin_slug ?? null,
-    destination_slug: doc.destination_slug ?? null,
-    origin_label: doc.origin_label ?? null,
-    destination_label: doc.destination_label ?? null,
+    paradaOrigen: pick('paradaOrigen', 'origin_slug') ?? null,
+    paradaDestino: pick('paradaDestino', 'destination_slug') ?? null,
+    nomParadaOrigen: pick('nomParadaOrigen', 'origin_label') ?? null,
+    nomParadaDestino: pick('nomParadaDestino', 'destination_label') ?? null,
+    origin_slug: pick('paradaOrigen', 'origin_slug') ?? null,
+    destination_slug: pick('paradaDestino', 'destination_slug') ?? null,
+    origin_label: pick('nomParadaOrigen', 'origin_label') ?? null,
+    destination_label: pick('nomParadaDestino', 'destination_label') ?? null,
     createdAt: doc.createdAt,
   }));
   return doc;

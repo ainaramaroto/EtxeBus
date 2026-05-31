@@ -3,14 +3,14 @@ from __future__ import annotations
 from decimal import Decimal
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, constr
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, constr
 
 
 class LineBase(BaseModel):
-    slug: str
+    slug: str = Field(validation_alias=AliasChoices("slug", "nomLineaCom"))
     nomLinea: str
-    badge: str | None = None
-    subtitle: str | None = None
+    badge: str | None = Field(default=None, validation_alias=AliasChoices("badge", "linea"))
+    subtitle: str | None = Field(default=None, validation_alias=AliasChoices("subtitle", "descLinea"))
     info: str | None = None
     color: str | None = None
     orden: int = 0
@@ -21,10 +21,10 @@ class LineCreate(LineBase):
 
 
 class LineUpdate(BaseModel):
-    slug: str | None = None
+    slug: str | None = Field(default=None, validation_alias=AliasChoices("slug", "nomLineaCom"))
     nomLinea: str | None = None
-    badge: str | None = None
-    subtitle: str | None = None
+    badge: str | None = Field(default=None, validation_alias=AliasChoices("badge", "linea"))
+    subtitle: str | None = Field(default=None, validation_alias=AliasChoices("subtitle", "descLinea"))
     info: str | None = None
     color: str | None = None
     orden: int | None = None
@@ -150,16 +150,16 @@ class ScheduleBlock(BaseModel):
 
 
 class PublishedSchedule(BaseModel):
-    slug: str
-    line_code: str
-    line_name: str
-    line_badge: str
-    line_color: str
-    service_name: str
-    description: str | None = None
+    slug: str = Field(validation_alias=AliasChoices("slug", "nomLineaCom"))
+    line_code: str = Field(validation_alias=AliasChoices("line_code", "lineCode", "codLinea"))
+    line_name: str = Field(validation_alias=AliasChoices("line_name", "nomLinea"))
+    line_badge: str = Field(validation_alias=AliasChoices("line_badge", "lin"))
+    line_color: str = Field(validation_alias=AliasChoices("line_color", "colorLinea"))
+    service_name: str = Field(validation_alias=AliasChoices("service_name", "servicioLinea"))
+    description: str | None = Field(default=None, validation_alias=AliasChoices("description", "desc"))
     orden: int
-    blocks: list[ScheduleBlock]
-    line_id: int | None = None
+    blocks: list[ScheduleBlock] = Field(validation_alias=AliasChoices("blocks", "bloques"))
+    line_id: int | None = Field(default=None, validation_alias=AliasChoices("line_id", "idLinea"))
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -170,10 +170,18 @@ class FavoriteTripBase(BaseModel):
 
 
 class FavoriteTripCreate(FavoriteTripBase):
-    origin_slug: constr(strip_whitespace=True, min_length=1, max_length=80)
-    destination_slug: constr(strip_whitespace=True, min_length=1, max_length=80)
-    origin_label: constr(strip_whitespace=True, min_length=1, max_length=120)
-    destination_label: constr(strip_whitespace=True, min_length=1, max_length=120)
+    origin_slug: constr(strip_whitespace=True, min_length=1, max_length=80) = Field(
+        validation_alias=AliasChoices("origin_slug", "paradaOrigen")
+    )
+    destination_slug: constr(strip_whitespace=True, min_length=1, max_length=80) = Field(
+        validation_alias=AliasChoices("destination_slug", "paradaDestino")
+    )
+    origin_label: constr(strip_whitespace=True, min_length=1, max_length=120) = Field(
+        validation_alias=AliasChoices("origin_label", "nomParadaOrigen")
+    )
+    destination_label: constr(strip_whitespace=True, min_length=1, max_length=120) = Field(
+        validation_alias=AliasChoices("destination_label", "nomParadaDestino")
+    )
 
 
 class FavoriteTrip(FavoriteTripCreate):

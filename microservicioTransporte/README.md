@@ -34,6 +34,7 @@ Servicio FastAPI encargado de exponer la informacion de lineas, paradas, trayect
 
 - `linea`, `parada`, `trayecto`, `trayecto_parada`
 - `horario`
+- `horario_publicado`, `horario_reserva`
 
 Cada tabla cuenta con un router especifico dentro de `app/routers` que implementa operaciones CRUD basicas mas filtros por parametros de consulta.
 

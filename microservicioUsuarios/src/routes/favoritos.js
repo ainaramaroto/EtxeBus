@@ -25,16 +25,20 @@ function buildUpdatesFromPayload(payload = {}) {
     updates.tipo = String(payload.tipo).trim();
   }
 
-  const stringFields = [
-    'origin_slug',
-    'destination_slug',
-    'origin_label',
-    'destination_label',
-  ];
+  const fieldMap = {
+    paradaOrigen: 'paradaOrigen',
+    paradaDestino: 'paradaDestino',
+    nomParadaOrigen: 'nomParadaOrigen',
+    nomParadaDestino: 'nomParadaDestino',
+    origin_slug: 'paradaOrigen',
+    destination_slug: 'paradaDestino',
+    origin_label: 'nomParadaOrigen',
+    destination_label: 'nomParadaDestino',
+  };
 
-  stringFields.forEach((field) => {
-    if (Object.prototype.hasOwnProperty.call(payload, field)) {
-      updates[field] = Preferencia.parseNullableString(payload[field], 120);
+  Object.entries(fieldMap).forEach(([incoming, canonical]) => {
+    if (Object.prototype.hasOwnProperty.call(payload, incoming)) {
+      updates[canonical] = Preferencia.parseNullableString(payload[incoming], 120);
     }
   });
 

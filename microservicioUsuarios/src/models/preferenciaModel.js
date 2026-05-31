@@ -18,25 +18,25 @@ const PreferenciaSchema = new mongoose.Schema(
       maxlength: 10,
       trim: true,
     },
-    origin_slug: {
+    paradaOrigen: {
       type: String,
       maxlength: 120,
       trim: true,
       default: null,
     },
-    destination_slug: {
+    paradaDestino: {
       type: String,
       maxlength: 120,
       trim: true,
       default: null,
     },
-    origin_label: {
+    nomParadaOrigen: {
       type: String,
       maxlength: 120,
       trim: true,
       default: null,
     },
-    destination_label: {
+    nomParadaDestino: {
       type: String,
       maxlength: 120,
       trim: true,
@@ -53,8 +53,8 @@ const PreferenciaSchema = new mongoose.Schema(
 );
 
 PreferenciaSchema.index(
-  { idUsuario: 1, origin_slug: 1, destination_slug: 1 },
-  { unique: true, sparse: true, name: 'uniq_usuario_trayecto' }
+  { idUsuario: 1, paradaOrigen: 1, paradaDestino: 1 },
+  { unique: true, sparse: true, name: 'uniq_usuario_trayecto_v2' }
 );
 
 module.exports = mongoose.model('Preferencia', PreferenciaSchema);

@@ -4,6 +4,10 @@ class Preferencia {
    * @param {number|string} [opts.idPreferencia]
    * @param {number|string} opts.idUsuario
    * @param {string} opts.tipo
+   * @param {string|null} [opts.paradaOrigen]
+   * @param {string|null} [opts.paradaDestino]
+   * @param {string|null} [opts.nomParadaOrigen]
+   * @param {string|null} [opts.nomParadaDestino]
    * @param {string|null} [opts.origin_slug]
    * @param {string|null} [opts.destination_slug]
    * @param {string|null} [opts.origin_label]
@@ -13,6 +17,10 @@ class Preferencia {
     idPreferencia = null,
     idUsuario,
     tipo,
+    paradaOrigen = null,
+    paradaDestino = null,
+    nomParadaOrigen = null,
+    nomParadaDestino = null,
     origin_slug = null,
     destination_slug = null,
     origin_label = null,
@@ -39,10 +47,22 @@ class Preferencia {
         : Preferencia.generarIdNumerico();
     this.idUsuario = parsedUsuario;
     this.tipo = String(tipo).trim();
-    this.origin_slug = Preferencia.parseNullableString(origin_slug, 120);
-    this.destination_slug = Preferencia.parseNullableString(destination_slug, 120);
-    this.origin_label = Preferencia.parseNullableString(origin_label, 120);
-    this.destination_label = Preferencia.parseNullableString(destination_label, 120);
+    this.paradaOrigen = Preferencia.parseNullableString(
+      paradaOrigen ?? origin_slug,
+      120
+    );
+    this.paradaDestino = Preferencia.parseNullableString(
+      paradaDestino ?? destination_slug,
+      120
+    );
+    this.nomParadaOrigen = Preferencia.parseNullableString(
+      nomParadaOrigen ?? origin_label,
+      120
+    );
+    this.nomParadaDestino = Preferencia.parseNullableString(
+      nomParadaDestino ?? destination_label,
+      120
+    );
     this.createdAt = new Date().toISOString();
   }
 
@@ -74,10 +94,15 @@ class Preferencia {
       idFavorito: this.idPreferencia,
       idUsuario: this.idUsuario,
       tipo: this.tipo,
-      origin_slug: this.origin_slug,
-      destination_slug: this.destination_slug,
-      origin_label: this.origin_label,
-      destination_label: this.destination_label,
+      paradaOrigen: this.paradaOrigen,
+      paradaDestino: this.paradaDestino,
+      nomParadaOrigen: this.nomParadaOrigen,
+      nomParadaDestino: this.nomParadaDestino,
+      // Compatibilidad hacia atras para clientes existentes.
+      origin_slug: this.paradaOrigen,
+      destination_slug: this.paradaDestino,
+      origin_label: this.nomParadaOrigen,
+      destination_label: this.nomParadaDestino,
       createdAt: this.createdAt,
     };
   }
@@ -92,10 +117,10 @@ class Preferencia {
       idPreferencia: obj.idPreferencia ?? obj.idFavorito ?? obj.id ?? null,
       idUsuario: obj.idUsuario,
       tipo: obj.tipo,
-      origin_slug: obj.origin_slug ?? null,
-      destination_slug: obj.destination_slug ?? null,
-      origin_label: obj.origin_label ?? null,
-      destination_label: obj.destination_label ?? null,
+      paradaOrigen: obj.paradaOrigen ?? obj.origin_slug ?? null,
+      paradaDestino: obj.paradaDestino ?? obj.destination_slug ?? null,
+      nomParadaOrigen: obj.nomParadaOrigen ?? obj.origin_label ?? null,
+      nomParadaDestino: obj.nomParadaDestino ?? obj.destination_label ?? null,
     });
   }
 }

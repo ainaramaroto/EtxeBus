@@ -66,11 +66,11 @@ def list_published_schedules(db: Session = Depends(get_db)):
     for card in cards:
         new_blocks: list[schemas.ScheduleBlock] = []
 
-        if external_blocks.get(card.slug):
-            for block in external_blocks[card.slug]:
+        if external_blocks.get(card.nomLineaCom):
+            for block in external_blocks[card.nomLineaCom]:
                 new_blocks.append(schemas.ScheduleBlock.model_validate(block))
         else:
-            for block in card.blocks or []:
+            for block in card.bloques or []:
                 new_columns = []
                 for column in block.get("columns", []):
                     column_copy = dict(column)
@@ -82,13 +82,13 @@ def list_published_schedules(db: Session = Depends(get_db)):
 
         enriched.append(
             schemas.PublishedSchedule(
-                slug=card.slug,
-                line_code=card.line_code,
-                line_name=card.line_name,
-                line_badge=card.line_badge,
-                line_color=card.line_color,
-                service_name=card.service_name,
-                description=card.description,
+                slug=card.nomLineaCom,
+                line_code=card.codLinea,
+                line_name=card.nomLinea,
+                line_badge=card.lin,
+                line_color=card.colorLinea,
+                service_name=card.servicioLinea,
+                description=card.desc,
                 orden=card.orden,
                 blocks=new_blocks,
                 line_id=card.idLinea,

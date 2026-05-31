@@ -4,7 +4,7 @@ from decimal import Decimal
 from datetime import datetime
 
 from sqlalchemy import DateTime, Float, ForeignKey, JSON, Numeric, String, UniqueConstraint, func
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship, synonym
 
 from .database import Base
 
@@ -13,19 +13,25 @@ class Line(Base):
     __tablename__ = "linea"
 
     idLinea: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    slug: Mapped[str] = mapped_column(String(40), unique=True, index=True)
+    nomLineaCom: Mapped[str] = mapped_column(String(40), unique=True, index=True)
     nomLinea: Mapped[str] = mapped_column(String(40))
-    badge: Mapped[str | None] = mapped_column(String(20), nullable=True)
-    subtitle: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    linea: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    descLinea: Mapped[str | None] = mapped_column(String(120), nullable=True)
     info: Mapped[str | None] = mapped_column(String(300), nullable=True)
     color: Mapped[str | None] = mapped_column(String(10), nullable=True)
     orden: Mapped[int] = mapped_column(default=0)
+
+    # Compatibilidad hacia atras con el contrato previo.
+    slug = synonym("nomLineaCom")
+    badge = synonym("linea")
+    subtitle = synonym("descLinea")
 
     paradas: Mapped[list["Stop"]] = relationship(
         back_populates="linea",
         cascade="all, delete-orphan",
         order_by="Stop.orden",
     )
+
 
 class Stop(Base):
     __tablename__ = "parada"
@@ -80,29 +86,45 @@ class Schedule(Base):
 
 
 class ScheduleCard(Base):
-    __tablename__ = "horario_card"
+    __tablename__ = "horario_publicado"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    slug: Mapped[str] = mapped_column(String(64), unique=True)
-    line_code: Mapped[str] = mapped_column(String(20))
-    line_name: Mapped[str] = mapped_column(String(60))
-    line_badge: Mapped[str] = mapped_column(String(20))
-    line_color: Mapped[str] = mapped_column(String(12))
-    service_name: Mapped[str] = mapped_column(String(120))
-    description: Mapped[str | None] = mapped_column(String(200), nullable=True)
-    blocks: Mapped[list[dict]] = mapped_column(JSON)
+    nomLineaCom: Mapped[str] = mapped_column(String(64), unique=True)
+    codLinea: Mapped[str] = mapped_column(String(20))
+    nomLinea: Mapped[str] = mapped_column(String(60))
+    lin: Mapped[str] = mapped_column(String(20))
+    colorLinea: Mapped[str] = mapped_column(String(12))
+    servicioLinea: Mapped[str] = mapped_column(String(120))
+    desc: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    bloques: Mapped[list[dict]] = mapped_column(JSON)
     orden: Mapped[int] = mapped_column(default=0)
     idLinea: Mapped[int | None] = mapped_column(ForeignKey("linea.idLinea"), nullable=True)
+
+    # Compatibilidad hacia atras con el contrato previo.
+    slug = synonym("nomLineaCom")
+    line_code = synonym("codLinea")
+    lineCode = synonym("codLinea")
+    line_name = synonym("nomLinea")
+    line_badge = synonym("lin")
+    line_color = synonym("colorLinea")
+    service_name = synonym("servicioLinea")
+    description = synonym("desc")
+    blocks = synonym("bloques")
 
     linea: Mapped["Line"] = relationship()
 
 
 class ExternalScheduleSnapshot(Base):
-    __tablename__ = "horario_snapshot"
+    __tablename__ = "horario_reserva"
 
-    slug: Mapped[str] = mapped_column(String(64), primary_key=True)
-    payload: Mapped[list[dict]] = mapped_column(JSON)
-    fetched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    nomLineaCom: Mapped[str] = mapped_column(String(64), primary_key=True)
+    datos: Mapped[list[dict]] = mapped_column(JSON)
+    act: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    # Compatibilidad hacia atras con el contrato previo.
+    slug = synonym("nomLineaCom")
+    payload = synonym("datos")
+    fetched_at = synonym("act")
 
 
 class FavoriteTrip(Base):
@@ -111,8 +133,8 @@ class FavoriteTrip(Base):
         UniqueConstraint(
             "usuario",
             "contrasenia",
-            "origin_slug",
-            "destination_slug",
+            "paradaOrigen",
+            "paradaDestino",
             name="uq_favorito_usuario_trayecto",
         ),
     )
@@ -120,8 +142,14 @@ class FavoriteTrip(Base):
     idFavorito: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     usuario: Mapped[str] = mapped_column(String(50))
     contrasenia: Mapped[str] = mapped_column(String(50))
-    origin_slug: Mapped[str] = mapped_column(String(80))
-    destination_slug: Mapped[str] = mapped_column(String(80))
-    origin_label: Mapped[str] = mapped_column(String(120))
-    destination_label: Mapped[str] = mapped_column(String(120))
+    paradaOrigen: Mapped[str] = mapped_column(String(80))
+    paradaDestino: Mapped[str] = mapped_column(String(80))
+    nomParadaOrigen: Mapped[str] = mapped_column(String(120))
+    nomParadaDestino: Mapped[str] = mapped_column(String(120))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    # Compatibilidad hacia atras con el contrato previo.
+    origin_slug = synonym("paradaOrigen")
+    destination_slug = synonym("paradaDestino")
+    origin_label = synonym("nomParadaOrigen")
+    destination_label = synonym("nomParadaDestino")

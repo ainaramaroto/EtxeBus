@@ -305,17 +305,17 @@ def _persist_snapshots(db: Session, blocks: dict[str, list[dict]]) -> None:
         return
     now = datetime.now(timezone.utc)
     existing = {
-        snapshot.slug: snapshot
+        snapshot.nomLineaCom: snapshot
         for snapshot in db.query(models.ExternalScheduleSnapshot).all()
     }
     updated = False
-    for slug, payload in blocks.items():
-        snapshot = existing.get(slug)
+    for nom_linea_com, payload in blocks.items():
+        snapshot = existing.get(nom_linea_com)
         if not snapshot:
-            snapshot = models.ExternalScheduleSnapshot(slug=slug)
+            snapshot = models.ExternalScheduleSnapshot(nomLineaCom=nom_linea_com)
             db.add(snapshot)
-        snapshot.payload = payload
-        snapshot.fetched_at = now
+        snapshot.datos = payload
+        snapshot.act = now
         updated = True
     if updated:
         db.commit()
@@ -323,11 +323,11 @@ def _persist_snapshots(db: Session, blocks: dict[str, list[dict]]) -> None:
 
 def _load_snapshot_blocks(db: Session) -> dict[str, list[dict]]:
     stored = db.query(models.ExternalScheduleSnapshot).all()
-    return {snapshot.slug: snapshot.payload for snapshot in stored if snapshot.payload}
+    return {snapshot.nomLineaCom: snapshot.datos for snapshot in stored if snapshot.datos}
 
 
 def _resolve_card_metadata(db: Session) -> dict[str, dict[str, int | None]]:
-    cards = {card.slug: card for card in db.query(models.ScheduleCard).all()}
+    cards = {card.nomLineaCom: card for card in db.query(models.ScheduleCard).all()}
     stop_names = {name for name in CARD_STOP_NAME_HINTS.values() if name}
     stops_by_name_and_line: dict[tuple[str, int | None], int] = {}
     if stop_names:
